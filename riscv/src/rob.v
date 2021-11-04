@@ -1,4 +1,4 @@
-`include "constant.v"
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/constant.v"
 module rob(
     input clk,input rst,input rdy,
     // for decode
@@ -17,13 +17,13 @@ module rob(
     reg [`DATA_WIDTH] destination [(`ROB_SIZE-1):0]; // Registers index is low bits of that
     reg ready [(`ROB_SIZE-1):0];
     reg [`INSIDE_OPCODE_WIDTH] op [(`ROB_SIZE-1):0];
-    // Data Structure; use 4'b1111 as ZERO_TAG_ROB
+    // Data Structure; 1-15 and 0 is symbol for non
     reg [`ROB_TAG_WIDTH] head;
     reg [`ROB_TAG_WIDTH] tail;
     wire [`ROB_TAG_WIDTH] nextPtr;
 
     // Combinatorial logic
-    assign nextPtr = (tail+1)%(`ROB_SIZE-1);
+    assign nextPtr = tail % (`ROB_SIZE-1)+1;
     assign out_decode_idle_tag = (nextPtr == head) ? `ZERO_TAG_ROB : nextPtr;
     assign out_fetcher_isidle = (nextPtr != head); 
     assign out_decode_fetch_value1 = value[in_decode_fetch_tag1];assign out_decode_fetch_ready1 = ready[in_decode_fetch_tag1];
@@ -31,7 +31,10 @@ module rob(
 
     // Temporal logic
     always @(posedge clk) begin
-        if(rst == `FALSE && rdy == `TRUE) begin 
+        if(rst == `TRUE) begin 
+            head <= 1;
+            tail <= 1;
+        end else if(rdy == `TRUE) begin 
             if(in_fetcher_ce == `TRUE) begin    // place entry from decoder
                 destination[nextPtr] <= in_decode_destination;
                 op[nextPtr] <= in_decode_op;
@@ -47,4 +50,16 @@ module rob(
             end
         end
     end
+
+    genvar i;
+    generate
+        for(i=0;i<`ROB_SIZE;i=i+1) begin :initROB
+            always@(posedge clk) begin
+                if(rst == `TRUE) begin
+                    ready[i] <= `FALSE;
+                    value[i] <= `ZERO_DATA;
+                end
+            end
+        end
+    endgenerate
 endmodule
