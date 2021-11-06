@@ -36,26 +36,24 @@ module decode (
     // ask rob to store entry
     output reg [`DATA_WIDTH] out_rob_destination, // need to distinguish register name from memory address
     output reg [`INSIDE_OPCODE_WIDTH] out_rob_op,
-    output reg out_rob_isready, // use to LUI/AUIPC/
-    output reg [`DATA_WIDTH] out_rob_value,
 
     // ask rs to store entry
     output reg [`ROB_TAG_WIDTH] out_rs_rob_tag, //use this == zero to check whether it is send to rs
     output reg [`INSIDE_OPCODE_WIDTH] out_rs_op,
-    output [`DATA_WIDTH] out_rs_value1,
-    output [`DATA_WIDTH] out_rs_value2,
-    output [`ROB_TAG_WIDTH] out_rs_tag1,
-    output [`ROB_TAG_WIDTH] out_rs_tag2,
+    output reg [`DATA_WIDTH] out_rs_value1,
+    output reg [`DATA_WIDTH] out_rs_value2,
+    output reg [`ROB_TAG_WIDTH] out_rs_tag1,
+    output reg [`ROB_TAG_WIDTH] out_rs_tag2,
     output reg [`DATA_WIDTH] out_rs_imm,
     output [`DATA_WIDTH] out_rs_pc,
 
     // ask lsb to store entry
     output reg [`ROB_TAG_WIDTH] out_lsb_rob_tag, //use this == lsb to check whether it is send to lsb
     output reg [`INSIDE_OPCODE_WIDTH] out_lsb_op,
-    output [`DATA_WIDTH] out_lsb_value1,
-    output [`DATA_WIDTH] out_lsb_value2,
-    output [`ROB_TAG_WIDTH] out_lsb_tag1,
-    output [`ROB_TAG_WIDTH] out_lsb_tag2,
+    output reg [`DATA_WIDTH] out_lsb_value1,
+    output reg [`DATA_WIDTH] out_lsb_value2,
+    output reg [`ROB_TAG_WIDTH] out_lsb_tag1,
+    output reg [`ROB_TAG_WIDTH] out_lsb_tag2,
     output reg [`DATA_WIDTH] out_lsb_imm
 
 );
@@ -85,16 +83,10 @@ module decode (
     assign tag1 = (in_reg_busy1 == `FALSE) ? `ZERO_TAG_ROB : (in_rob_fetch_ready1 == `TRUE) ? `ZERO_TAG_ROB : in_reg_robtag1;
     assign value2 = (in_reg_busy2 == `FALSE) ? in_reg_value2 : (in_rob_fetch_ready2 == `TRUE) ? in_rob_fetch_value2 : `ZERO_DATA;
     assign tag2 = (in_reg_busy2 == `FALSE) ? `ZERO_TAG_ROB : (in_rob_fetch_ready2 == `TRUE) ? `ZERO_TAG_ROB : in_reg_robtag2;
-    assign out_rs_value1 = value1;assign out_rs_tag1 = tag1;
-    assign out_rs_value2 = value2;assign out_rs_tag2 = tag2;
-    assign out_lsb_value1 = value1;assign out_lsb_tag1 = tag1;
-    assign out_lsb_value2 = value2;assign out_lsb_tag2 = tag2;
 
     always @(*) begin
         out_rob_destination = `ZERO_TAG_REG;
         out_rob_op = `NOP;
-        out_rob_isready = `FALSE;
-        out_rob_value = `ZERO_DATA;
         out_rs_rob_tag = `ZERO_TAG_ROB;
         out_rs_op = `NOP;
         out_rs_imm = `ZERO_DATA;
@@ -102,21 +94,31 @@ module decode (
         out_lsb_imm = `ZERO_DATA;
         out_lsb_rob_tag = `ZERO_TAG_ROB;
         out_reg_destination = `ZERO_TAG_REG;
-        
+        out_rs_value1 = `ZERO_DATA;
+        out_rs_tag1 = `ZERO_TAG_ROB;
+        out_rs_value2 = `ZERO_DATA;
+        out_rs_tag2 = `ZERO_TAG_ROB;
+        out_lsb_value1 = `ZERO_DATA;
+        out_lsb_tag1 = `ZERO_TAG_ROB;
+        out_lsb_value2 = `ZERO_DATA;
+        out_lsb_tag2 = `ZERO_TAG_ROB;
+
         if(rst == `FALSE && rdy == `TRUE) begin 
             case (opcode)
                 LUI:begin
-                  out_rob_value = {in_fetcher_instr[31:12],12'b0};
                   out_rob_op = `LUI;
                   out_rob_destination = {27'b0,rd[4:0]};
-                  out_rob_isready = `TRUE;
+                  out_rs_rob_tag = in_rob_freetag;
+                  out_rs_op = `LUI;
+                  out_rs_imm = {in_fetcher_instr[31:12],12'b0};
                   out_reg_destination = rd;
                 end
-                AUIPC:begin  // todo : add pc
-                  out_rob_value = {in_fetcher_instr[31:12],12'b0};
+                AUIPC:begin
                   out_rob_op = `AUIPC;
                   out_rob_destination = {27'b0,rd[4:0]};
-                  out_rob_isready = `TRUE;
+                  out_rs_rob_tag = in_rob_freetag;
+                  out_rs_op = `AUIPC;
+                  out_rs_imm = {in_fetcher_instr[31:12],12'b0};
                   out_reg_destination = rd;
                 end
                 JAL:begin 
@@ -130,8 +132,10 @@ module decode (
                 end
                 LI_TYPE:begin 
                     out_rob_destination = {27'b0,rd[4:0]};
-                    out_lsb_imm = {{21{in_fetcher_instr[31]}},in_fetcher_instr[30:20]};
                     out_lsb_rob_tag = in_rob_freetag;
+                    out_lsb_value1 = value1;
+                    out_lsb_tag1 = tag1;
+                    out_lsb_imm = {{21{in_fetcher_instr[31]}},in_fetcher_instr[30:20]};
                     out_reg_destination = rd;
                     case(funct3) 
                         3'b000:begin    out_lsb_op = `LB;     out_rob_op = `LB; end
@@ -141,8 +145,12 @@ module decode (
                         3'b101:begin    out_lsb_op = `LHU;    out_rob_op = `LHU; end
                     endcase
                 end
-                S_TYPE:begin 
+                S_TYPE:begin
                     out_lsb_rob_tag = in_rob_freetag;
+                    out_lsb_value1 = value1;
+                    out_lsb_tag1 = tag1;
+                    out_lsb_value2 = value2;
+                    out_lsb_tag2 = tag2;
                     out_lsb_imm = {{21{in_fetcher_instr[31]}},in_fetcher_instr[30:25],in_fetcher_instr[11:7]};
                     case(funct3) 
                         3'b000:begin    out_lsb_op = `SB;    out_rob_op = `SB; end
@@ -153,6 +161,8 @@ module decode (
                 AI_TYPE:begin 
                     out_rob_destination = {27'b0,rd[4:0]};
                     out_rs_rob_tag = in_rob_freetag;
+                    out_rs_value1 = value1;
+                    out_rs_tag1 = tag1;
                     out_rs_imm = {{21{in_fetcher_instr[31]}},in_fetcher_instr[30:20]};
                     out_reg_destination = rd;
                     case(funct3) 
@@ -179,6 +189,10 @@ module decode (
                 R_TYPE:begin 
                     out_rob_destination = {27'b0,rd[4:0]};
                     out_rs_rob_tag = in_rob_freetag;
+                    out_rs_value1 = value1;
+                    out_rs_tag1 = tag1;
+                    out_rs_value2 = value2;
+                    out_rs_tag2 = tag2;
                     out_reg_destination = rd;
                     case(funct3)
                         3'b000:begin 
