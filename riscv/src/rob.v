@@ -46,10 +46,16 @@ module rob(
     assign out_decode_fetch_value2 = value[in_decode_fetch_tag2];assign out_decode_fetch_ready2 = ready[in_decode_fetch_tag2];
 
     // Temporal logic
+    integer i;
     always @(posedge clk) begin
         if(rst == `TRUE) begin 
             head <= 1;
             tail <= 1;
+            for(i = 0;i < `ROB_SIZE;i=i+1) begin 
+                ready[i] <= `FALSE;
+                value[i] <= `ZERO_DATA;
+                op[i] <= `NOP;
+            end
         end else if(rdy == `TRUE) begin 
             if(in_fetcher_ce == `TRUE) begin    // place entry from decoder
                 destination[nextPtr] <= in_decode_destination;
@@ -67,16 +73,4 @@ module rob(
             end
         end
     end
-
-    genvar i;
-    generate
-        for(i=0;i<`ROB_SIZE;i=i+1) begin :initROB
-            always@(posedge clk) begin
-                if(rst == `TRUE) begin
-                    ready[i] <= `FALSE;
-                    value[i] <= `ZERO_DATA;
-                end
-            end
-        end
-    endgenerate
 endmodule
