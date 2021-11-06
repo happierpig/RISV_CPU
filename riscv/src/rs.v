@@ -16,6 +16,7 @@ module rs (
     input [`DATA_WIDTH] in_decode_imm,
     input [`ROB_TAG_WIDTH] in_decode_tag1, 
     input [`ROB_TAG_WIDTH] in_decode_tag2,
+    input [`DATA_WIDTH] in_decode_pc,
 
     // from cdb to update source value
     input [`DATA_WIDTH] in_alu_cdb_value,
@@ -26,7 +27,8 @@ module rs (
     output reg [`DATA_WIDTH] out_alu_value1,
     output reg [`DATA_WIDTH] out_alu_value2,
     output reg [`DATA_WIDTH] out_alu_imm,
-    output reg [`ROB_TAG_WIDTH] out_alu_rob_tag
+    output reg [`ROB_TAG_WIDTH] out_alu_rob_tag,
+    output reg [`DATA_WIDTH] out_alu_pc
 );
     // Information storage
     reg busy[(`RS_SIZE-1):0];
@@ -35,6 +37,7 @@ module rs (
     reg [`DATA_WIDTH] value1[(`RS_SIZE-1):0];
     reg [`DATA_WIDTH] value2[(`RS_SIZE-1):0];
     reg [`DATA_WIDTH] imms [(`RS_SIZE-1):0];
+    reg [`DATA_WIDTH] pcs [(`RS_SIZE-1):0];
     reg [`ROB_TAG_WIDTH] value1_tag[(`RS_SIZE-1):0];
     reg [`ROB_TAG_WIDTH] value2_tag[(`RS_SIZE-1):0];
 
@@ -146,6 +149,7 @@ module rs (
                 out_alu_value2 <= value2[issue_tag];
                 out_alu_imm <= imms[issue_tag];
                 out_alu_rob_tag <= tags[issue_tag];
+                out_alu_pc <= pcs[issue_tag];
                 busy[issue_tag] <= `FALSE;
             end
             //try to store new entry into rs
@@ -158,6 +162,7 @@ module rs (
                 imms[free_tag] <= in_decode_imm;
                 value1_tag[free_tag] <= in_decode_tag1;
                 value2_tag[free_tag] <= in_decode_tag2;
+                pcs[free_tag] <= in_decode_pc;
             end
             // monitor CDB
             for(i = 1;i < `RS_SIZE;i=i+1) begin 
@@ -172,6 +177,7 @@ module rs (
                             value2_tag[i] <= `ZERO_TAG_ROB;
                         end
                     end
+                    //todo: LSB buffer
                 end
             end
         end

@@ -13,6 +13,7 @@ module fetcher (
 
     // pass to decoder
     output reg [`DATA_WIDTH] out_instr,
+    output reg [`DATA_WIDTH] out_pc,
 
     // RS/LSB/ROB's status
     input in_rs_idle,
@@ -35,6 +36,7 @@ module fetcher (
             out_mem_ce <= `FALSE;
             out_mem_pc <= `ZERO_DATA;
             out_instr <= `ZERO_DATA;
+            out_pc <= `ZERO_DATA;
             out_store_ce <= `FALSE;
         end else if(rdy == `TRUE) begin 
             out_mem_ce <= `FALSE;
@@ -46,6 +48,7 @@ module fetcher (
             end else if(idle == `FALSE) begin 
                 if(in_mem_ce == `TRUE) begin 
                     out_instr <= in_mem_instr;
+                    out_pc <= pc;
                     out_store_ce <= `TRUE;
                     idle <= `TRUE;
                     // todo : branch instruction and pc value pass
