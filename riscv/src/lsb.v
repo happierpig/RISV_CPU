@@ -63,7 +63,7 @@ module lsb(
     wire ready_to_issue [(`LSB_SIZE-1):0];
     wire [`LSB_TAG_WIDTH] nextPtr;
     wire [`LSB_TAG_WIDTH] nowPtr;
-    
+
     // Combinatorial logic
     assign nextPtr = tail % (`LSB_SIZE-1) + 1; // 1 - 15 
     assign nowPtr = head % (`LSB_SIZE-1) + 1;
@@ -97,10 +97,10 @@ module lsb(
     // Temporal logic
     integer j;
     always @(posedge clk) begin 
-        out_rob_tag <= `ZERO_TAG_ROB;
-        out_mem_ce <= `FALSE;
         if(rst == `TRUE) begin 
             status <= 0; head <= 1; tail <= 1;
+            out_rob_tag <= `ZERO_TAG_ROB;
+            out_mem_ce <= `FALSE;
             for(j = 0;j < `LSB_SIZE;j=j+1) begin 
                 busy[j] <= `FALSE;
                 address_ready[j] <= `FALSE;
@@ -110,6 +110,8 @@ module lsb(
             end
         end else if(rdy == `TRUE) begin
             // Try to issue S/L instruction to ROB:
+            out_rob_tag <= `ZERO_TAG_ROB;
+            out_mem_ce <= `FALSE;
             if(ready_to_issue[nowPtr] == `TRUE) begin 
                 if(status == 0) begin 
                     case(op[nowPtr])

@@ -16,8 +16,7 @@ module ram
 wire       ram_bram_we;
 wire [7:0] ram_bram_dout;
 
-single_port_ram_sync #(.ADDR_WIDTH(ADDR_WIDTH),
-                       .DATA_WIDTH(8)) ram_bram(
+single_port_ram_sync #(.ADDR_WIDTH(ADDR_WIDTH),.DATA_WIDTH(8)) ram_bram(
   .clk(clk_in),
   .we(ram_bram_we),
   .addr_a(a_in),

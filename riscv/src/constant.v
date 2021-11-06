@@ -5,6 +5,7 @@
 `define REG_TAG_WIDTH 4:0
 `define INSIDE_OPCODE_WIDTH 5:0
 `define RS_TAG_WIDTH 3:0
+`define LSB_TAG_WIDTH 3:0
 `define OPCODE_WIDTH 6:0
 
 // Constant
@@ -15,8 +16,13 @@
 `define ZERO_TAG_REG 5'b0
 `define ZERO_TAG_ROB 4'b0
 `define ZERO_TAG_RS  4'b0
+`define ZERO_TAG_LSB 4'b0
 `define ROB_SIZE 16
 `define RS_SIZE 16
+`define LSB_SIZE 16
+`define JUMP_ENABLE 32'b1
+`define JUMP_DISABLE 32'b0
+
 
 // Instructions
 `define NOP 6'b000000
@@ -75,3 +81,22 @@
 `define SRA 6'b100011
 `define OR 6'b100100
 `define AND 6'b100101
+
+// ATTENTION:
+
+// LUI : immediate -> x[rd]
+// AUIPC: pc+immediate->x[rd]
+
+// JAL:   jump and pc+4->x[rd]
+// JALR:  jump to x[rs1]+imm  and pc+4 -> x[rd]
+// BEQ:   (x1 == x2) jump to pc + imm;
+// BNE:   (x1 != x2) jump to pc + imm;
+// BLT:   signed(x1 < x2) jump to pc + imm;
+// BGE:   signed(x1 > x2) jump to pc + imm;
+// BLTU:  unsigned BLT
+// BGEU:  unsigned BGEU
+
+// ADDI: x[rs1] + imm -> x[rd]
+// SLTI: (x[rs1] < imm) ? 1 : 0;
+// SLTIU: unsigned SLTI
+// XORI: x[rs1] ^ imm -> x[rd]

@@ -1,4 +1,4 @@
-`include "constant.v"
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/constant.v"
 
 module registers (
     input clk,input rst,input rdy,
@@ -18,7 +18,7 @@ module registers (
     input [`ROB_TAG_WIDTH] in_decode_destination_rob,
 
     // ROB commit modify registers. ps:write
-    input [`REG_TAG_WIDTH] in_rob_commit_reg,
+    input [`REG_TAG_WIDTH] in_rob_commit_reg, // zero will not affect anything.
     input [`ROB_TAG_WIDTH] in_rob_commit_rob,
     input [`DATA_WIDTH] in_rob_commit_value
 );
@@ -54,7 +54,7 @@ module registers (
         for(k=1;k<`REG_SIZE;k=k+1) begin:ROBWriteReg // make sure that Reg[0] will not be modified.
             always @(posedge clk) begin
                 if(rst == `FALSE && rdy == `TRUE) begin
-                    if(in_rob_commit_reg == k) begin // todo : maybe ce ?
+                    if(in_rob_commit_reg == k) begin
                         values[k] <= in_rob_commit_value;
                         if(in_rob_commit_rob == tags[k]) begin
                             busy[k] <= `FALSE;

@@ -39,11 +39,12 @@ module rob(
     output out_lsb_check,
 
     // commit : to register
-    output reg[`REG_TAG_WIDTH] out_reg_index,
+    output reg[`REG_TAG_WIDTH] out_reg_index, // zero means there is no data
     output reg[`ROB_TAG_WIDTH] out_reg_rob_tag,
     output reg[`DATA_WIDTH] out_reg_value,
 
     // commit : to memory 
+    output reg out_mem_ce,
     output reg [2:0] out_mem_size,
     output reg [`DATA_WIDTH] out_mem_address,
     output reg [`DATA_WIDTH] out_mem_data,
@@ -92,17 +93,19 @@ module rob(
     // Temporal logic
     integer i;
     always @(posedge clk) begin
-        out_reg_index <= `ZERO_TAG_REG;
         if(rst == `TRUE) begin 
-            head <= 1;
-            tail <= 1;
+            head <= 1; tail <= 1;
+            out_reg_index <= `ZERO_TAG_REG;
+            out_mem_ce <= `FALSE;
             for(i = 0;i < `ROB_SIZE;i=i+1) begin 
                 ready[i] <= `FALSE;
                 value[i] <= `ZERO_DATA;
                 op[i] <= `NOP;
                 isStore[i] <= `FALSE;
             end
-        end else if(rdy == `TRUE) begin 
+        end else if(rdy == `TRUE) begin
+            out_reg_index <= `ZERO_TAG_REG;
+            out_mem_ce <= `FALSE;
             // store entry from decoder
             if(in_fetcher_ce == `TRUE) begin    
                 destination[nextPtr] <= in_decode_destination;
