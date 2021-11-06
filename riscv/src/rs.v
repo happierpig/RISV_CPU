@@ -18,10 +18,14 @@ module rs (
     input [`ROB_TAG_WIDTH] in_decode_tag2,
     input [`DATA_WIDTH] in_decode_pc,
 
-    // from cdb to update source value
+    // from alu_cdb to update source value
     input [`DATA_WIDTH] in_alu_cdb_value,
     input [`ROB_TAG_WIDTH] in_alu_cdb_tag, // use this == `ZERO_TAG_ROB to check legality
 
+    // from lsb_cdb to update source value 
+    input [`ROB_TAG_WIDTH] in_lsb_cdb_tag, // use this == `ZERO_TAG_ROB to check legality
+    input [`DATA_WIDTH] in_lsb_cdb_value,
+ 
     // for alu to calculate
     output reg [`INSIDE_OPCODE_WIDTH] out_alu_op,
     output reg [`DATA_WIDTH] out_alu_value1,
@@ -87,54 +91,11 @@ module rs (
                                                                     ready[13] ? 13 :
                                                                         ready[14] ? 14 :
                                                                             ready[15] ? 15 : `ZERO_TAG_RS;
-    // Temporal logic
-    // genvar i;
-    // generate
-    //     for(i = 0;i < `RS_SIZE;i=i+1) begin:reset
-    //         always@(posedge clk) begin
-    //             if(rst == `TRUE) begin    //reset
-    //                 busy[i] <= `FALSE;
-    //                 tags[i] <= `ZERO_TAG_ROB;
-    //             end else if(rdy == `TRUE) begin 
-    //                 if(busy[i] == `TRUE) begin  // monitor CDB
-    //                     if(value1_tag[i] != `ZERO_TAG_ROB && value1_tag[i] == in_cdb_tag) begin
-    //                         value1_tag[i] <= `ZERO_TAG_ROB;
-    //                         value1[i] <= in_cdb_value;
-    //                     end
-    //                     if(value2_tag[i] != `ZERO_TAG_ROB && value2_tag[i] == in_cdb_tag) begin
-    //                         value2_tag[i] <= `ZERO_TAG_ROB;
-    //                         value2[i] <= in_cdb_value;
-    //                     end
-    //                 end
-    //             end
-    //         end
-    //     end
-    // endgenerate
-
-    // always@(posedge clk) begin
-    //     if(rst == `FALSE && rdy == `TRUE) begin 
-    //         if(in_fetcher_ce == `TRUE) begin // add entry from Decoder
-    //             tags[free_tag] <= in_decode_rob_tag;
-    //             op[free_tag] <= in_decode_op;
-    //             value1[free_tag] <= in_decode_value1;
-    //             value2[free_tag] <= in_decode_value2;
-    //             value1_tag[free_tag] <= in_decode_tag1;
-    //             value2_tag[free_tag] <= in_decode_tag2;
-    //             busy[free_tag] <= `TRUE;
-    //         end
-    //         if(issue_tag != `ZERO_TAG_RS) begin //issue to ALU
-    //             out_alu_op <= op[issue_tag];
-    //             out_alu_rob_tag <= tags[issue_tag];
-    //             out_alu_value1 <= value1[issue_tag];
-    //             out_alu_value2 <= value2[issue_tag];
-    //         end
-    //     end
-    // end
 
     integer i;
     always@(posedge clk) begin 
+        out_alu_op <= `NOP; // do this for avoiding repeatedly CDB broadcast
         if(rst == `TRUE) begin 
-            out_alu_op <= `NOP;
             for(i = 0;i < `RS_SIZE;i=i+1) begin 
                 busy[i] <= `FALSE;
                 tags[i] <= `ZERO_TAG_ROB;
@@ -142,7 +103,6 @@ module rs (
             end
         end else if(rdy == `TRUE) begin 
             // try to issue entry to ALU
-            out_alu_op <= `NOP; // do this for avoiding repeatedly CDB broadcast
             if(issue_tag != `ZERO_TAG_RS) begin 
                 out_alu_op <= op[issue_tag];
                 out_alu_value1 <= value1[issue_tag];
@@ -177,7 +137,16 @@ module rs (
                             value2_tag[i] <= `ZERO_TAG_ROB;
                         end
                     end
-                    //todo: LSB buffer
+                    if(in_lsb_cdb_tag != `ZERO_TAG_ROB) begin 
+                        if(value1_tag[i] == in_lsb_cdb_tag) begin 
+                            value1[i] <= in_lsb_cdb_tag;
+                            value1_tag[i] <= `ZERO_TAG_ROB;
+                        end
+                        if(value2_tag[i] == in_lsb_cdb_tag) begin 
+                            value2[i] <= in_lsb_cdb_value;
+                            value2_tag[i] <= `ZERO_TAG_ROB;
+                        end
+                    end
                 end
             end
         end
