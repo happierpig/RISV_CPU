@@ -122,13 +122,37 @@ module decode (
                   out_reg_destination = rd;
                 end
                 JAL:begin 
-                    
+                    out_rob_op = `JAL;
+                    out_rob_destination = {27'b0,rd[4:0]};
+                    out_rs_rob_tag = in_rob_freetag;
+                    out_rs_op = `JAL;
+                    out_reg_destination = rd;
                 end
                 JALR:begin 
-
+                    out_rob_op = `JALR;
+                    out_rob_destination = {27'b0,rd[4:0]};
+                    out_rs_rob_tag = in_rob_freetag;
+                    out_rs_op = `JALR;
+                    out_rs_value1 = value1;
+                    out_rs_tag1 = tag1;
+                    out_rs_imm = {in_fetcher_instr[31:12],12'b0};
+                    out_reg_destination = rd;
                 end
                 B_TYPE:begin 
-                    
+                    out_rs_rob_tag = in_rob_freetag;
+                    out_rs_value1 = value1;
+                    out_rs_tag1 = tag1;
+                    out_rs_value2 = value2;
+                    out_rs_tag2 = tag2;
+                    out_rs_imm = {{20{in_fetcher_instr[31]}},in_fetcher_instr[7],in_fetcher_instr[30:25],in_fetcher_instr[11:8], 1'b0};
+                    case(funct3) 
+                        3'b000:begin    out_rs_op = `BEQ;     out_rob_op = `BEQ; end
+                        3'b001:begin    out_rs_op = `BNE;     out_rob_op = `BNE; end
+                        3'b100:begin    out_rs_op = `BLT;     out_rob_op = `BLT; end
+                        3'b101:begin    out_rs_op = `BGE;     out_rob_op = `BGE; end
+                        3'b110:begin    out_rs_op = `BLTU;    out_rob_op = `LHU; end
+                        3'b111:begin    out_rs_op = `BGEU;    out_rob_op = `BGEU; end
+                    endcase
                 end
                 LI_TYPE:begin 
                     out_rob_destination = {27'b0,rd[4:0]};
