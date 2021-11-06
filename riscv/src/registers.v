@@ -4,19 +4,36 @@ module registers (
     input clk,input rst,input rdy,
 
     // Decoder asks for Value/ROB-Tag/Busy of two operands. ps: read-only
-    input [`REG_TAG_WIDTH] in_decode_reg_tag1,output [`DATA_WIDTH] out_decode_value1,output [`ROB_TAG_WIDTH] out_decode_rob_tag1,output out_decode_busy1,
-    input [`REG_TAG_WIDTH] in_decode_reg_tag2,output [`DATA_WIDTH] out_decode_value2,output [`ROB_TAG_WIDTH] out_decode_rob_tag2,output out_decode_busy2,
+    input [`REG_TAG_WIDTH] in_decode_reg_tag1,
+    output [`DATA_WIDTH] out_decode_value1,
+    output [`ROB_TAG_WIDTH] out_decode_rob_tag1,
+    output out_decode_busy1,
+    input [`REG_TAG_WIDTH] in_decode_reg_tag2,
+    output [`DATA_WIDTH] out_decode_value2,
+    output [`ROB_TAG_WIDTH] out_decode_rob_tag2,
+    output out_decode_busy2,
+
     // Decoder sets destination register's rob-tag. ps:write
-    input [`REG_TAG_WIDTH] in_decode_destination_reg,input [`ROB_TAG_WIDTH] in_decode_destination_rob,
+    input [`REG_TAG_WIDTH] in_decode_destination_reg,
+    input [`ROB_TAG_WIDTH] in_decode_destination_rob,
+
     // ROB commit modify registers. ps:write
-    input [`REG_TAG_WIDTH] in_rob_commit_reg,input [`ROB_TAG_WIDTH] in_rob_commit_rob,input [`DATA_WIDTH] in_rob_commit_value
+    input [`REG_TAG_WIDTH] in_rob_commit_reg,
+    input [`ROB_TAG_WIDTH] in_rob_commit_rob,
+    input [`DATA_WIDTH] in_rob_commit_value
 );
+    // data structure
     reg [`DATA_WIDTH] values [(`REG_SIZE-1):0];
     reg [`ROB_TAG_WIDTH] tags [(`REG_SIZE-1):0];
     reg busy [(`REG_SIZE-1):0];
+
     // Combinatorial logic
-    assign out_decode_value1 = values[in_decode_reg_tag1];assign out_decode_rob_tag1 = tags[in_decode_reg_tag1];assign out_decode_busy1 = busy[in_decode_reg_tag1];
-    assign out_decode_value2 = values[in_decode_reg_tag2];assign out_decode_rob_tag2 = tags[in_decode_reg_tag2];assign out_decode_busy2 = busy[in_decode_reg_tag2];
+    assign out_decode_value1 = values[in_decode_reg_tag1];
+    assign out_decode_rob_tag1 = tags[in_decode_reg_tag1];
+    assign out_decode_busy1 = busy[in_decode_reg_tag1];
+    assign out_decode_value2 = values[in_decode_reg_tag2];
+    assign out_decode_rob_tag2 = tags[in_decode_reg_tag2];
+    assign out_decode_busy2 = busy[in_decode_reg_tag2];
     
     // Temporal logic
     genvar i;
@@ -26,6 +43,7 @@ module registers (
                 if(rst == `TRUE) begin
                     values[i] <= `ZERO_DATA;
                     busy[i] <= `FALSE;
+                    tags[i] <= `ZERO_TAG_ROB;
                 end
             end
         end

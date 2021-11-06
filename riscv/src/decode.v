@@ -1,4 +1,4 @@
-`include "constant.v"
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/constant.v"
 
 module decode (
     input clk,input rst,input rdy,

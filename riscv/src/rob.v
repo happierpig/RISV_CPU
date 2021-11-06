@@ -1,16 +1,32 @@
 `include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/constant.v"
 module rob(
     input clk,input rst,input rdy,
-    // for decode
-    output out_decode_idle_tag,input [`DATA_WIDTH] in_decode_destination,input [`INSIDE_OPCODE_WIDTH] in_decode_op,
-    input [`ROB_TAG_WIDTH] in_decode_fetch_tag1,output [`DATA_WIDTH] out_decode_fetch_value1,output out_decode_fetch_ready1,
-    input [`ROB_TAG_WIDTH] in_decode_fetch_tag2,output [`DATA_WIDTH] out_decode_fetch_value2,output out_decode_fetch_ready2,
+
+    // asked by decode to store entry
+    output out_decode_idle_tag,
+    input [`DATA_WIDTH] in_decode_destination,
+    input [`INSIDE_OPCODE_WIDTH] in_decode_op,
+    input in_decode_ready,
+    input [`DATA_WIDTH] in_decode_value,
+
+    // asked by decode for register value
+    input [`ROB_TAG_WIDTH] in_decode_fetch_tag1,
+    output [`DATA_WIDTH] out_decode_fetch_value1,
+    output out_decode_fetch_ready1,
+    input [`ROB_TAG_WIDTH] in_decode_fetch_tag2,
+    output [`DATA_WIDTH] out_decode_fetch_value2,
+    output out_decode_fetch_ready2,
+
     //for fetcher
-    output out_fetcher_isidle,input in_fetcher_ce,
+    output out_fetcher_isidle,
+    input in_fetcher_ce,
     // from cdb
-    input [`DATA_WIDTH] in_cdb_value,input [`ROB_TAG_WIDTH] in_cdb_tag,
+    input [`DATA_WIDTH] in_cdb_value,
+    input [`ROB_TAG_WIDTH] in_cdb_tag,
     // commit : to register / to memory
-    output reg[`REG_TAG_WIDTH] out_reg_index,output reg[`ROB_TAG_WIDTH] out_reg_robtag,output reg[`DATA_WIDTH] out_reg_value
+    output reg[`REG_TAG_WIDTH] out_reg_index,
+    output reg[`ROB_TAG_WIDTH] out_reg_robtag,
+    output reg[`DATA_WIDTH] out_reg_value
 );
     // information storage
     reg [`DATA_WIDTH] value [(`ROB_SIZE-1):0];
@@ -38,7 +54,8 @@ module rob(
             if(in_fetcher_ce == `TRUE) begin    // place entry from decoder
                 destination[nextPtr] <= in_decode_destination;
                 op[nextPtr] <= in_decode_op;
-                ready[nextPtr] <= `FALSE;
+                ready[nextPtr] <= in_decode_ready;
+                value[nextPtr] <= in_decode_value;
                 tail <= nextPtr;
             end
             if(in_cdb_tag != `ZERO_TAG_ROB) begin  // monitor cdb
