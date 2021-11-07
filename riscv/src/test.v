@@ -4,6 +4,7 @@ module test;
     reg clk;
     reg rst;
     integer i;
+    reg [5:0] test;
     wire [5:0] ans;
     my_test zyl(
         .clk(clk),.rst(rst),.ans(ans)
@@ -15,17 +16,20 @@ module test;
         #0 begin
             clk = 1'b0;
             rst = 1'b1;
+            test = 0;
         end
         #20 begin 
-            rst = 1'b0;
+            rst = 1'b1;
+            test = $signed({rst,test[0]});
+            $display(test);
         end
-        #0 begin
-            for(i = 0;i < 100;i=i+1) begin
-                #1 begin
-                    $display($time,"  ",ans[5:0]);
-                end
-            end
-        end
+        // #0 begin
+        //     for(i = 0;i < 100;i=i+1) begin
+        //         #1 begin
+        //             $display($time,"  ",ans[5:0]);
+        //         end
+        //     end
+        // end
         $finish;
     end
 endmodule

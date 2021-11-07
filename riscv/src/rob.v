@@ -45,7 +45,7 @@ module rob(
 
     // commit : to memory 
     output reg out_mem_ce,
-    output reg [2:0] out_mem_size,
+    output reg [5:0] out_mem_size,
     output reg [`DATA_WIDTH] out_mem_address,
     output reg [`DATA_WIDTH] out_mem_data,
     input in_mem_ce
@@ -56,7 +56,7 @@ module rob(
     reg ready [(`ROB_SIZE-1):0];
     reg [`INSIDE_OPCODE_WIDTH] op [(`ROB_SIZE-1):0];
     reg [`DATA_WIDTH] newpc [(`ROB_SIZE-1):0];
-    reg isStore[(`ROB_SIZE-1):0];
+    reg isStore[(`ROB_SIZE-1):0]; // When committed,this tag is canceled. 
 
     // Data Structure; 1-15 and 0 is symbol for non
     reg [`ROB_TAG_WIDTH] head;

@@ -28,7 +28,7 @@ module lsb(
 
     // to memory control 
     output reg out_mem_ce,
-    output reg [2:0] out_mem_size,
+    output reg [5:0] out_mem_size,
     output reg out_mem_signed,  // 0 for unsigned;1 for signed
     output reg [`DATA_WIDTH] out_mem_address,
 
