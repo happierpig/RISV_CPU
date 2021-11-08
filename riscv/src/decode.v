@@ -135,7 +135,7 @@ module decode (
                     out_rs_op = `JALR;
                     out_rs_value1 = value1;
                     out_rs_tag1 = tag1;
-                    out_rs_imm = {in_fetcher_instr[31:12],12'b0};
+                    out_rs_imm = {{21{in_fetcher_instr[31]}},in_fetcher_instr[30:20]};
                     out_reg_destination = rd;
                 end
                 B_TYPE:begin 
