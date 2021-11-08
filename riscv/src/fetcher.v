@@ -24,14 +24,14 @@ module fetcher (
     output reg out_store_ce
 );
     // Control Units
-    reg idle; // True for idle and false denotes waiting for memory response.
+    parameter IDLE = 2'b0,WAIT_MEM = 2'b01,WAIT_IDLE = 2'b10;
+    reg [2:0] status; // True for idle and false denotes waiting for memory response.
     reg [`DATA_WIDTH] pc;
-    wire isIdle;
-    assign isIdle = idle && in_rs_idle && in_lsb_idle && in_rob_idle;
-
+    wire next_idle = in_rs_idle && in_lsb_idle && in_rob_idle;
+    
     always@(posedge clk) begin
         if(rst == `TRUE) begin 
-            idle <= `TRUE;
+            status <= IDLE;
             pc <= `ZERO_DATA;
             out_mem_ce <= `FALSE;
             out_mem_pc <= `ZERO_DATA;
@@ -41,19 +41,25 @@ module fetcher (
         end else if(rdy == `TRUE) begin 
             out_mem_ce <= `FALSE;
             out_store_ce <= `FALSE;
-            if(isIdle == `TRUE) begin 
-                idle <= `FALSE;
+            if(status == IDLE) begin 
+                status <= WAIT_MEM;
                 out_mem_ce <= `TRUE;
                 out_mem_pc <= pc;
-            end else if(idle == `FALSE) begin 
+            end else if(status == WAIT_MEM) begin 
                 if(in_mem_ce == `TRUE) begin 
                     out_instr <= in_mem_instr;
                     out_pc <= pc;
-                    out_store_ce <= `TRUE;
-                    idle <= `TRUE;
-                    // todo : branch instruction and pc value pass
+                    if(next_idle == `TRUE) begin 
+                        out_store_ce <= `TRUE;
+                        status <= IDLE;
+                    end else begin status <= WAIT_IDLE; end
+
+                    // todo : branch instruction
                     pc <= pc + 4;
                 end
+            end else if(status == WAIT_IDLE) begin 
+                out_store_ce <= `TRUE;
+                status <= IDLE;
             end
         end
     end
