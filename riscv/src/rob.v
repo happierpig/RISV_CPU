@@ -64,6 +64,7 @@ module rob(
     wire [`ROB_TAG_WIDTH] nextPtr;
     wire [`ROB_TAG_WIDTH] nowPtr;
     reg status; // 0 means idle and 1 means waiting for memory.
+    localparam IDLE = 0,WAIT_MEM = 1;
 
     // Combinatorial logic
     assign nextPtr = tail % (`ROB_SIZE-1)+1;
@@ -97,6 +98,7 @@ module rob(
             head <= 1; tail <= 1;
             out_reg_index <= `ZERO_TAG_REG;
             out_mem_ce <= `FALSE;
+            status <= IDLE;
             for(i = 0;i < `ROB_SIZE;i=i+1) begin 
                 ready[i] <= `FALSE;
                 value[i] <= `ZERO_DATA;
@@ -133,32 +135,32 @@ module rob(
             end
             // try to commit head entry
             if(ready[nowPtr] == `TRUE) begin
-                if(status == 0) begin 
+                if(status == IDLE) begin 
                     case(op[nowPtr])
                         `NOP: begin end
                         `JAL: begin end
                         `JALR: begin end
                         `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU: begin end
                         `SB: begin 
-                            status <= 1;
+                            status <= WAIT_MEM;
                             out_mem_size <= 1;
                             out_mem_address <= destination[nowPtr];
                             out_mem_data <= value[nowPtr];
                         end
                         `SH: begin 
-                            status <= 1;
+                            status <= WAIT_MEM;
                             out_mem_size <= 2;
                             out_mem_address <= destination[nowPtr];
                             out_mem_data <= value[nowPtr];
                         end
                         `SW: begin 
-                            status <= 1;
+                            status <= WAIT_MEM;
                             out_mem_size <= 4;
                             out_mem_address <= destination[nowPtr];
                             out_mem_data <= value[nowPtr];
                         end
                         default:begin 
-                            status <= 0;
+                            status <= IDLE;
                             out_reg_index <= destination[nowPtr][`REG_TAG_WIDTH];
                             out_reg_rob_tag <= nowPtr;
                             out_reg_value <= value[nowPtr];
@@ -166,9 +168,9 @@ module rob(
                             head <= nowPtr;
                         end
                     endcase
-                end else if(status == 1) begin 
+                end else if(status == WAIT_MEM) begin 
                     if(in_mem_ce == `TRUE) begin 
-                        status <= 0;
+                        status <= IDLE;
                         isStore[nowPtr] <= `FALSE;
                         head <= nowPtr;
                     end
