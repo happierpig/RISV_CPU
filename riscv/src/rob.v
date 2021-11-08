@@ -48,7 +48,11 @@ module rob(
     output reg [5:0] out_mem_size,
     output reg [`DATA_WIDTH] out_mem_address,
     output reg [`DATA_WIDTH] out_mem_data,
-    input in_mem_ce
+    input in_mem_ce,
+
+    // output denote misbranch  
+    output reg out_misbranch,
+    output reg [`DATA_WIDTH] out_newpc
 );
     // information storage
     reg [`DATA_WIDTH] value [(`ROB_SIZE-1):0];
@@ -99,13 +103,15 @@ module rob(
             out_reg_index <= `ZERO_TAG_REG;
             out_mem_ce <= `FALSE;
             status <= IDLE;
+            out_misbranch <= `FALSE;
+            out_newpc <= `ZERO_DATA;
             for(i = 0;i < `ROB_SIZE;i=i+1) begin 
                 ready[i] <= `FALSE;
                 value[i] <= `ZERO_DATA;
                 op[i] <= `NOP;
                 isStore[i] <= `FALSE;
             end
-        end else if(rdy == `TRUE) begin
+        end else if(rdy == `TRUE && out_misbranch == `FALSE) begin
             out_reg_index <= `ZERO_TAG_REG;
             out_mem_ce <= `FALSE;
             // store entry from decoder
@@ -138,9 +144,20 @@ module rob(
                 if(status == IDLE) begin 
                     case(op[nowPtr])
                         `NOP: begin end
-                        `JAL: begin end
-                        `JALR: begin end
-                        `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU: begin end
+                        `JALR: begin 
+                            out_reg_index <= destination[nowPtr][`REG_TAG_WIDTH];
+                            out_reg_rob_tag <= nowPtr;
+                            out_reg_value <= value[nowPtr];
+                            out_misbranch <= `TRUE;
+                            out_newpc <= newpc[nowPtr];
+                        end
+                        `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU: begin 
+                            // todo : branch prediction
+                            if(value[nowPtr] == `JUMP_ENABLE) begin 
+                                out_misbranch <= `TRUE;
+                                out_newpc <= newpc[nowPtr];
+                            end
+                        end
                         `SB: begin 
                             status <= WAIT_MEM;
                             out_mem_size <= 1;
@@ -159,6 +176,8 @@ module rob(
                             out_mem_address <= destination[nowPtr];
                             out_mem_data <= value[nowPtr];
                         end
+
+                        //registers operation | load | JAL
                         default:begin 
                             status <= IDLE;
                             out_reg_index <= destination[nowPtr][`REG_TAG_WIDTH];
@@ -175,6 +194,17 @@ module rob(
                         head <= nowPtr;
                     end
                 end
+            end
+        end else if(rdy == `TRUE && out_misbranch == `TRUE) begin 
+            out_misbranch <= `FALSE;
+            head <= 1;tail <= 1;
+            out_reg_index <= `ZERO_TAG_REG;
+            out_mem_ce <= `FALSE;
+            status <= IDLE;
+            for(i = 0;i < `ROB_SIZE;i=i+1) begin 
+                ready[i] <= `FALSE;
+                value[i] <= `ZERO_DATA;
+                isStore[i] <= `FALSE;
             end
         end
     end

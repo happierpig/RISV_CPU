@@ -27,12 +27,15 @@ module rs (
     input [`DATA_WIDTH] in_lsb_cdb_value,
  
     // for alu to calculate
-    output reg [`INSIDE_OPCODE_WIDTH] out_alu_op,
+    output reg [`INSIDE_OPCODE_WIDTH] out_alu_op, // `NOP means no operations
     output reg [`DATA_WIDTH] out_alu_value1,
     output reg [`DATA_WIDTH] out_alu_value2,
     output reg [`DATA_WIDTH] out_alu_imm,
     output reg [`ROB_TAG_WIDTH] out_alu_rob_tag,
-    output reg [`DATA_WIDTH] out_alu_pc
+    output reg [`DATA_WIDTH] out_alu_pc,
+
+    // from rob to denote misbranch
+    input in_rob_misbranch
 );
     // Information storage
     reg busy[(`RS_SIZE-1):0];
@@ -94,57 +97,65 @@ module rs (
 
     integer i;
     always@(posedge clk) begin 
-        out_alu_op <= `NOP; // do this for avoiding repeatedly CDB broadcast
         if(rst == `TRUE) begin 
+            out_alu_op <= `NOP;
             for(i = 0;i < `RS_SIZE;i=i+1) begin 
                 busy[i] <= `FALSE;
                 tags[i] <= `ZERO_TAG_ROB;
                 op[i] <= `NOP;
             end
         end else if(rdy == `TRUE) begin 
+            out_alu_op <= `NOP;
             // try to issue entry to ALU
-            if(issue_tag != `ZERO_TAG_RS) begin 
-                out_alu_op <= op[issue_tag];
-                out_alu_value1 <= value1[issue_tag];
-                out_alu_value2 <= value2[issue_tag];
-                out_alu_imm <= imms[issue_tag];
-                out_alu_rob_tag <= tags[issue_tag];
-                out_alu_pc <= pcs[issue_tag];
-                busy[issue_tag] <= `FALSE;
-            end
-            //try to store new entry into rs
-            if(in_fetcher_ce == `TRUE && in_decode_rob_tag != `ZERO_TAG_ROB) begin 
-                busy[free_tag] <= `TRUE;
-                tags[free_tag] <= in_decode_rob_tag;
-                op[free_tag] <= in_decode_op;
-                value1[free_tag] <= in_decode_value1;
-                value2[free_tag] <= in_decode_value2;
-                imms[free_tag] <= in_decode_imm;
-                value1_tag[free_tag] <= in_decode_tag1;
-                value2_tag[free_tag] <= in_decode_tag2;
-                pcs[free_tag] <= in_decode_pc;
-            end
-            // monitor CDB
-            for(i = 1;i < `RS_SIZE;i=i+1) begin 
-                if(busy[i] == `TRUE) begin 
-                    if(in_alu_cdb_tag != `ZERO_TAG_ROB) begin  
-                        if(value1_tag[i] == in_alu_cdb_tag) begin 
-                            value1[i] <= in_alu_cdb_value;
-                            value1_tag[i] <= `ZERO_TAG_ROB;
+            if(in_rob_misbranch == `TRUE) begin 
+                for(i = 1;i < `RS_SIZE;i=i+1) begin 
+                    busy[i] <= `FALSE;
+                    tags[i] <= `ZERO_TAG_ROB;
+                end
+            end else begin 
+                if(issue_tag != `ZERO_TAG_RS) begin 
+                    out_alu_op <= op[issue_tag];
+                    out_alu_value1 <= value1[issue_tag];
+                    out_alu_value2 <= value2[issue_tag];
+                    out_alu_imm <= imms[issue_tag];
+                    out_alu_rob_tag <= tags[issue_tag];
+                    out_alu_pc <= pcs[issue_tag];
+                    busy[issue_tag] <= `FALSE;
+                end
+                //try to store new entry into rs
+                if(in_fetcher_ce == `TRUE && in_decode_rob_tag != `ZERO_TAG_ROB) begin 
+                    busy[free_tag] <= `TRUE;
+                    tags[free_tag] <= in_decode_rob_tag;
+                    op[free_tag] <= in_decode_op;
+                    value1[free_tag] <= in_decode_value1;
+                    value2[free_tag] <= in_decode_value2;
+                    imms[free_tag] <= in_decode_imm;
+                    value1_tag[free_tag] <= in_decode_tag1;
+                    value2_tag[free_tag] <= in_decode_tag2;
+                    pcs[free_tag] <= in_decode_pc;
+                end
+                // monitor CDB
+                for(i = 1;i < `RS_SIZE;i=i+1) begin 
+                    if(busy[i] == `TRUE) begin 
+                        if(in_alu_cdb_tag != `ZERO_TAG_ROB) begin  
+                            if(value1_tag[i] == in_alu_cdb_tag) begin 
+                                value1[i] <= in_alu_cdb_value;
+                                value1_tag[i] <= `ZERO_TAG_ROB;
+                            end
+                            if(value2_tag[i] == in_alu_cdb_tag) begin 
+                                value2[i] <= in_alu_cdb_value;
+                                value2_tag[i] <= `ZERO_TAG_ROB;
+                            end
                         end
-                        if(value2_tag[i] == in_alu_cdb_tag) begin 
-                            value2[i] <= in_alu_cdb_value;
-                            value2_tag[i] <= `ZERO_TAG_ROB;
-                        end
-                    end
-                    if(in_lsb_cdb_tag != `ZERO_TAG_ROB) begin 
-                        if(value1_tag[i] == in_lsb_cdb_tag) begin 
-                            value1[i] <= in_lsb_cdb_tag;
-                            value1_tag[i] <= `ZERO_TAG_ROB;
-                        end
-                        if(value2_tag[i] == in_lsb_cdb_tag) begin 
-                            value2[i] <= in_lsb_cdb_value;
-                            value2_tag[i] <= `ZERO_TAG_ROB;
+                        if(in_lsb_cdb_tag != `ZERO_TAG_ROB) begin 
+                            if(value1_tag[i] == in_lsb_cdb_tag) begin 
+                                value1[i] <= in_lsb_cdb_tag;
+                                value1_tag[i] <= `ZERO_TAG_ROB;
+                            end
+                            if(value2_tag[i] == in_lsb_cdb_tag) begin 
+                                value2[i] <= in_lsb_cdb_value;
+                                value2_tag[i] <= `ZERO_TAG_ROB;
+                            end
                         end
                     end
                 end

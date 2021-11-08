@@ -21,14 +21,18 @@ module fetcher (
     input in_rob_idle,
 
     // enable rs/lsb/rob to store entry 
-    output reg out_store_ce
+    output reg out_store_ce,
+
+    // from rob to denote that misbranch
+    input in_rob_misbranch,
+    input [`DATA_WIDTH] in_rob_newpc
 );
     // Control Units
-    parameter IDLE = 2'b0,WAIT_MEM = 2'b01,WAIT_IDLE = 2'b10;
+    localparam IDLE = 2'b0,WAIT_MEM = 2'b01,WAIT_IDLE = 2'b10;
     reg [2:0] status; // True for idle and false denotes waiting for memory response.
     reg [`DATA_WIDTH] pc;
     wire next_idle = in_rs_idle && in_lsb_idle && in_rob_idle;
-    
+
     always@(posedge clk) begin
         if(rst == `TRUE) begin 
             status <= IDLE;
@@ -41,25 +45,31 @@ module fetcher (
         end else if(rdy == `TRUE) begin 
             out_mem_ce <= `FALSE;
             out_store_ce <= `FALSE;
-            if(status == IDLE) begin 
-                status <= WAIT_MEM;
-                out_mem_ce <= `TRUE;
-                out_mem_pc <= pc;
-            end else if(status == WAIT_MEM) begin 
-                if(in_mem_ce == `TRUE) begin 
-                    out_instr <= in_mem_instr;
-                    out_pc <= pc;
-                    if(next_idle == `TRUE) begin 
-                        out_store_ce <= `TRUE;
-                        status <= IDLE;
-                    end else begin status <= WAIT_IDLE; end
-
-                    // todo : branch instruction
-                    pc <= pc + 4;
-                end
-            end else if(status == WAIT_IDLE) begin 
-                out_store_ce <= `TRUE;
+            if(in_rob_misbranch == `TRUE) begin 
                 status <= IDLE;
+                pc <= in_rob_newpc;
+            end else begin
+                if(status == IDLE) begin
+                    status <= WAIT_MEM;
+                    out_mem_ce <= `TRUE;
+                    out_mem_pc <= pc;
+                end else if(status == WAIT_MEM) begin 
+                    if(in_mem_ce == `TRUE) begin 
+                        out_instr <= in_mem_instr;
+                        out_pc <= pc;
+                        if(next_idle == `TRUE) begin 
+                            out_store_ce <= `TRUE;
+                            status <= IDLE;
+                        end else begin status <= WAIT_IDLE; end
+                        // branch instruction
+                        if(in_mem_instr[`OPCODE_WIDTH] == `JAL) begin
+                            pc <= pc + {{12{in_mem_instr[31]}}, in_mem_instr[19:12], in_mem_instr[20], in_mem_instr[30:25], in_mem_instr[24:21], 1'b0};
+                        end else begin pc <= pc + 4; end
+                    end
+                end else if(status == WAIT_IDLE) begin 
+                    out_store_ce <= `TRUE;
+                    status <= IDLE;
+                end
             end
         end
     end

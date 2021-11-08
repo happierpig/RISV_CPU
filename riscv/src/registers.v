@@ -20,7 +20,10 @@ module registers (
     // ROB commit modify registers. ps:write
     input [`REG_TAG_WIDTH] in_rob_commit_reg, // zero will not affect anything.
     input [`ROB_TAG_WIDTH] in_rob_commit_rob,
-    input [`DATA_WIDTH] in_rob_commit_value
+    input [`DATA_WIDTH] in_rob_commit_value,
+
+    // from rob to denote misbranch
+    input in_rob_misbranch
 );
     // data structure
     reg [`DATA_WIDTH] values [(`REG_SIZE-1):0];
@@ -63,6 +66,10 @@ module registers (
                     if(in_decode_destination_reg == k) begin
                         busy[k] <= `TRUE;
                         tags[k] <= in_decode_destination_rob;
+                    end
+                    if(in_rob_misbranch == `TRUE) begin 
+                        busy[k] <= `FALSE;
+                        tags[k] <= `ZERO_TAG_ROB;
                     end
                 end
             end

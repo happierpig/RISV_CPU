@@ -39,12 +39,16 @@ module lsb(
     // CDB to ROB/RS
     output reg [`ROB_TAG_WIDTH] out_rob_tag, // Zero means Not to do anything
     output reg [`DATA_WIDTH] out_destination, // for store 
-    output reg [`DATA_WIDTH] out_value
+    output reg [`DATA_WIDTH] out_value,
+
+    // from ROB to denote that misbranch
+    input in_rob_misbranch
 );
     // Load  寄存器目的地已知，缺地址(x[rs1] + imm) 和 value(from memory)
     // Store 缺目的地(Memory_address: x[rs1] + imm) 和 value(x[rs2])
 
     // Data structure 
+    localparam IDLE = 1'b0,WAIT_MEM = 1'b1;
     reg status; // 0 means idle ; 1 means waiting for memory
     reg busy[(`LSB_SIZE-1):0];
     reg [`LSB_TAG_WIDTH] head;
@@ -98,7 +102,8 @@ module lsb(
     integer j;
     always @(posedge clk) begin 
         if(rst == `TRUE) begin 
-            status <= 0; head <= 1; tail <= 1;
+            status <= IDLE; 
+            head <= 1; tail <= 1;
             out_rob_tag <= `ZERO_TAG_ROB;
             out_mem_ce <= `FALSE;
             for(j = 0;j < `LSB_SIZE;j=j+1) begin 
@@ -108,15 +113,15 @@ module lsb(
                 value2_tag[j] <= `ZERO_TAG_ROB;
                 address[j] <= `ZERO_DATA;
             end
-        end else if(rdy == `TRUE) begin
+        end else if(rdy == `TRUE && in_rob_misbranch != `FALSE) begin
             // Try to issue S/L instruction to ROB:
             out_rob_tag <= `ZERO_TAG_ROB;
             out_mem_ce <= `FALSE;
             if(ready_to_issue[nowPtr] == `TRUE) begin 
-                if(status == 0) begin 
+                if(status == IDLE) begin 
                     case(op[nowPtr])
                         `SB,`SH,`SW: begin
-                            status <= 0;
+                            status <= IDLE;
                             out_destination <= address[nowPtr];
                             out_value <= value2[nowPtr];
                             out_rob_tag <= tags[nowPtr];
@@ -124,19 +129,10 @@ module lsb(
                             address_ready[nowPtr] <= `FALSE;
                             head <= nowPtr;
                         end
-                        `LB: begin
+                        `LB,`LBU: begin
                             if(in_rob_check == `FALSE) begin
-                                status <= 1;
-                                out_mem_signed <= 1;
-                                out_mem_ce <= `TRUE;
-                                out_mem_size <= 1;
-                                out_mem_address <= address[nowPtr];
-                            end
-                        end
-                        `LBU:begin 
-                            if(in_rob_check == `FALSE) begin
-                                status <= 1;
-                                out_mem_signed <= 0;
+                                status <= WAIT_MEM;
+                                out_mem_signed <= (op[nowPtr] == `LB) ? 1 : 0; 
                                 out_mem_ce <= `TRUE;
                                 out_mem_size <= 1;
                                 out_mem_address <= address[nowPtr];
@@ -144,17 +140,8 @@ module lsb(
                         end
                         `LH,`LHU: begin 
                             if(in_rob_check == `FALSE) begin
-                                status <= 1;
-                                out_mem_signed <= 1;
-                                out_mem_ce <= `TRUE;
-                                out_mem_size <= 2;
-                                out_mem_address <= address[nowPtr];
-                            end
-                        end
-                        `LHU:begin
-                            if(in_rob_check == `FALSE) begin
-                                status <= 1;
-                                out_mem_signed <= 0;
+                                status <= WAIT_MEM;
+                                out_mem_signed <= (op[nowPtr] == `LH) ? 1 : 0;
                                 out_mem_ce <= `TRUE;
                                 out_mem_size <= 2;
                                 out_mem_address <= address[nowPtr];
@@ -162,14 +149,14 @@ module lsb(
                         end
                         `LW: begin
                             if(in_rob_check == `FALSE) begin
-                                status <= 1;
+                                status <= WAIT_MEM;
                                 out_mem_ce <= `TRUE;
                                 out_mem_size <= 4;
                                 out_mem_address <= address[nowPtr];
                             end
                         end
                     endcase
-                end else if(status == 1) begin
+                end else if(status == WAIT_MEM) begin
                     if(in_mem_ce == `TRUE) begin 
                         // CDB to rs/rob
                         out_rob_tag <= tags[nowPtr];
@@ -188,7 +175,7 @@ module lsb(
                             end
                         end
                         // cancle it in lsb
-                        status <= 0;
+                        status <= IDLE;
                         busy[nowPtr] <= `FALSE;
                         address_ready[nowPtr] <= `FALSE;
                         head <= nowPtr;
@@ -227,6 +214,16 @@ module lsb(
                         end
                     end
                 end
+            end
+        end else if(rdy == `TRUE && in_rob_misbranch == `TRUE) begin 
+            out_rob_tag <= `ZERO_TAG_ROB;
+            out_mem_ce <= `FALSE;
+            status <= IDLE;
+            head <= 1;tail <=1;
+            for(j = 1;j < `LSB_SIZE;j=j+1) begin 
+                busy[j] <= `FALSE;
+                tags[j] <= `ZERO_TAG_ROB;
+                address_ready[j] <= `FALSE;
             end
         end
     end

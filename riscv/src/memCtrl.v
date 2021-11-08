@@ -35,9 +35,12 @@ module memCtrl(
     output reg out_ram_rw,      // 1 for read  ; 0 for write;
     output reg out_ram_address,
     output reg [7:0] out_ram_data,
-    input [7:0] in_ram_data
+    input [7:0] in_ram_data,
+
+    // from rob to denote misbranch 
+    input in_rob_misbranch
 );
-    parameter INIT_SIZE = 6'b11111;
+
     // Control units 
     reg fetcher_flag;
     reg lsb_flag;
@@ -68,7 +71,7 @@ module memCtrl(
             stages <= 1;
             out_ram_rw <= 1;
             out_ram_address <= `ZERO_DATA;
-        end else if(rdy == `TRUE) begin 
+        end else if(rdy == `TRUE && in_rob_misbranch == `FALSE) begin 
             // update buffer
             out_ram_rw <= 1; // avoid repeatedly writing
             out_rob_ce <= `FALSE;
@@ -158,6 +161,18 @@ module memCtrl(
                     status <= buffered_status;
                 end
             endcase
+        end else if(rdy == `TRUE && in_rob_misbranch == `TRUE) begin 
+            fetcher_flag <= `FALSE;
+            out_fetcher_ce <= `FALSE;
+            lsb_flag <= `FALSE;
+            out_lsb_ce <= `FALSE;
+            rob_flag <= `FALSE;
+            out_rob_ce <= `FALSE;
+            out_data <= `ZERO_DATA;
+            status <= 0;
+            stages <= 1;
+            out_ram_rw <= 1;
+            out_ram_address <= `ZERO_DATA;
         end
     end
 
