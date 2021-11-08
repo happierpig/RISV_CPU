@@ -43,12 +43,13 @@ module memCtrl(
     reg lsb_flag;
     reg rob_flag;
     reg [5:0] stages;
-    wire [1:0] status; // 0 for idle ; 1 for fetcher; 2 for lsb; 3 for lsb;
+    reg [1:0] status;
+    wire [1:0] buffered_status; // 0 for idle ; 1 for fetcher; 2 for lsb; 3 for lsb;
     wire [7:0] buffered_write_data;
     // Combinatorial logic
-    assign status = (rob_flag == `TRUE) ? 3 : 
-                            (lsb_flag == `TRUE) ? 2 : 
-                                (fetcher_flag == `TRUE) ? 1 : 0;
+    assign buffered_status = (rob_flag == `TRUE) ? 3 : 
+                                (lsb_flag == `TRUE) ? 2 : 
+                                    (fetcher_flag == `TRUE) ? 1 : 0;
     assign buffered_write_data = (stages == 0) ? 0 :
                                     (stages == 1) ? in_rob_data[7:0] :
                                         (stages == 2) ? in_rob_data[15:8] : 
@@ -63,6 +64,7 @@ module memCtrl(
             rob_flag <= `FALSE;
             out_rob_ce <= `FALSE;
             out_data <= `ZERO_DATA;
+            status <= 0;
             stages <= 1;
             out_ram_rw <= 1;
             out_ram_address <= `ZERO_DATA;
@@ -86,6 +88,7 @@ module memCtrl(
                         stages <= 1;
                         rob_flag <= `FALSE;
                         out_rob_ce <= `TRUE;
+                        status <= 0;
                     end
                 end
                 2:begin 
@@ -99,6 +102,7 @@ module memCtrl(
                                     stages <= 1 ;
                                     lsb_flag <= `FALSE;
                                     out_lsb_ce <= `TRUE;
+                                    status <= 0;
                                 end
                             endcase
                         end
@@ -112,6 +116,7 @@ module memCtrl(
                                     stages <= 1;
                                     lsb_flag <= `FALSE;
                                     out_lsb_ce <= `TRUE;
+                                    status <= 0;
                                 end
                             endcase
                         end
@@ -126,6 +131,7 @@ module memCtrl(
                                     stages <= 1;
                                     lsb_flag <= `FALSE;
                                     out_lsb_ce <= `TRUE;
+                                    status <= 0;
                                 end 
                             endcase
                         end
@@ -142,12 +148,14 @@ module memCtrl(
                             stages <= 1;
                             fetcher_flag <= `FALSE;
                             out_fetcher_ce <= `TRUE;
+                            status <= 0;
                         end   
                     endcase
                 end
                 0: begin 
                     out_ram_address <= `ZERO_DATA;
                     stages <= 1;
+                    status <= buffered_status;
                 end
             endcase
         end
