@@ -33,7 +33,7 @@ module memCtrl(
 
     // interface with ram  
     output reg out_ram_rw,      // 1 for read  ; 0 for write;
-    output reg out_ram_address,
+    output reg [`DATA_WIDTH] out_ram_address,
     output reg [7:0] out_ram_data,
     input [7:0] in_ram_data,
 

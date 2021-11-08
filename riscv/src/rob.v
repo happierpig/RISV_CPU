@@ -4,7 +4,7 @@ module rob(
     input clk,input rst,input rdy,
 
     // asked by decode about idle tag
-    output out_decode_idle_tag,
+    output [`ROB_TAG_WIDTH] out_decode_idle_tag,
 
     // asked by decode to store entry
     input [`DATA_WIDTH] in_decode_destination, // distinguish register index with memory address
@@ -30,7 +30,7 @@ module rob(
     input [`ROB_TAG_WIDTH] in_alu_cdb_tag, // `ZERO_TAG_ROB means no data comes in
 
     // from lsb_cdb
-    input [`DATA_WIDTH] in_lsb_cdb_tag,
+    input [`ROB_TAG_WIDTH] in_lsb_cdb_tag,
     input [`DATA_WIDTH] in_lsb_cdb_value,
     input [`DATA_WIDTH] in_lsb_cdb_destination,
 

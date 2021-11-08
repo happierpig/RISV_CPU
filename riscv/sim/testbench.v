@@ -2,6 +2,7 @@
 // for simulation only
 
 `timescale 1ns/1ps
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/riscv_top.v"
 module testbench;
 
 reg clk;

@@ -1,6 +1,8 @@
 // riscv top module file
 // modification allowed for debugging purposes
-
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/common/block_ram/block_ram.v"
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/cpu.v"
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/hci.v"
 module riscv_top
 #(
 	parameter SIM = 0						// whether in simulation

@@ -1,5 +1,19 @@
 # RISCV-CPU
 
+#### Write Log
+
+2021.11.2 Learn Tomasulo and Verilog
+
+2021.11.3 Complete the design drawing and start writing
+
+2021.11.4 Finish PC/Fetcher/Register
+
+2021.11.5 Finish Decoder/RS/ROB
+
+2021.11.6 Finish LSB/ALU and modify some unreasonable codes
+
+2021.11.7 Complete memory control unit and Finish all ,start debug
+
 #### Repo Structure
 
 ```
