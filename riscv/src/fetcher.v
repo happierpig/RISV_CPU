@@ -62,7 +62,7 @@ module fetcher (
                             status <= IDLE;
                         end else begin status <= WAIT_IDLE; end
                         // branch instruction
-                        if(in_mem_instr[`OPCODE_WIDTH] == `JAL) begin
+                        if(in_mem_instr[`OPCODE_WIDTH] == 7'b1101111) begin
                             pc <= pc + {{12{in_mem_instr[31]}}, in_mem_instr[19:12], in_mem_instr[20], in_mem_instr[30:25], in_mem_instr[24:21], 1'b0};
                         end else begin pc <= pc + 4; end
                     end
