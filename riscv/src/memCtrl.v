@@ -32,7 +32,7 @@ module memCtrl(
     output reg [`DATA_WIDTH] out_data,
 
     // interface with ram  
-    output reg out_ram_rw,      // 1 for read  ; 0 for write;
+    output reg out_ram_rw,      // 0 for read  ; 1 for write;
     output reg [`DATA_WIDTH] out_ram_address,
     output reg [7:0] out_ram_data,
     input [7:0] in_ram_data,
@@ -53,6 +53,7 @@ module memCtrl(
     assign buffered_status = (rob_flag == `TRUE) ? 3 : 
                                 (lsb_flag == `TRUE) ? 2 : 
                                     (fetcher_flag == `TRUE) ? 1 : 0;
+
     assign buffered_write_data = (stages == 0) ? 0 :
                                     (stages == 1) ? in_rob_data[7:0] :
                                         (stages == 2) ? in_rob_data[15:8] : 
@@ -69,14 +70,16 @@ module memCtrl(
             out_data <= `ZERO_DATA;
             status <= 0;
             stages <= 1;
-            out_ram_rw <= 1;
+            out_ram_rw <= 0;
             out_ram_address <= `ZERO_DATA;
+            out_ram_data <= 0;
         end else if(rdy == `TRUE && in_rob_misbranch == `FALSE) begin 
             // update buffer
-            out_ram_rw <= 1; // avoid repeatedly writing
+            out_ram_rw <= 0; // avoid repeatedly writing
             out_rob_ce <= `FALSE;
             out_lsb_ce <= `FALSE;
             out_fetcher_ce <= `FALSE;
+            out_ram_data <= 0;
             if(in_fetcher_ce == `TRUE) begin fetcher_flag <= `TRUE;end
             if(in_lsb_ce == `TRUE) begin lsb_flag <= `TRUE; end 
             if(in_rob_ce == `TRUE) begin rob_flag <= `TRUE; end
@@ -84,7 +87,7 @@ module memCtrl(
             stages <= stages + 1;
             case(status)
                 3:begin 
-                    out_ram_rw <= 0;
+                    out_ram_rw <= 1;
                     if(stages == 1) begin out_ram_address <= in_rob_addr; end
                     out_ram_data <= buffered_write_data;
                     if(stages == in_rob_size) begin 
@@ -98,7 +101,7 @@ module memCtrl(
                     case(in_lsb_size)
                         1: begin 
                             case(stages) 
-                                1:begin out_ram_address <= in_lsb_addr; end
+                                // 1:begin out_ram_address <= in_lsb_addr; end
                                 2:begin
                                     if(in_lsb_signed == 1) begin out_data <= $signed(in_ram_data);end
                                     else begin out_data <= in_ram_data; end
@@ -111,7 +114,7 @@ module memCtrl(
                         end
                         2: begin 
                             case(stages) 
-                                1: begin out_ram_address <= in_lsb_addr;end 
+                                // 1: begin out_ram_address <= in_lsb_addr;end 
                                 2: begin out_data[7:0] <= in_ram_data; end
                                 3: begin 
                                     if(in_lsb_signed) begin out_data <= $signed({in_ram_data,out_data[7:0]}); end
@@ -125,7 +128,7 @@ module memCtrl(
                         end
                         4: begin 
                             case(stages) 
-                                1: begin out_ram_address <= in_lsb_addr; end 
+                                // 1: begin out_ram_address <= in_lsb_addr; end 
                                 2: begin out_data[7:0] <= in_ram_data; end
                                 3: begin out_data[15:8] <= in_ram_data; end
                                 4: begin out_data[23:16] <= in_ram_data; end 
@@ -142,7 +145,7 @@ module memCtrl(
                 end
                 1:begin
                     case(stages) 
-                        1: begin out_ram_address <= in_fetcher_addr; end
+                        // 1: begin out_ram_address <= in_fetcher_addr; end
                         2: begin out_data[7:0] <= in_ram_data; end
                         3: begin out_data[15:8] <= in_ram_data; end
                         4: begin out_data[23:16] <= in_ram_data; end 
@@ -159,6 +162,9 @@ module memCtrl(
                     out_ram_address <= `ZERO_DATA;
                     stages <= 1;
                     status <= buffered_status;
+                    out_ram_address <= (buffered_status == 3) ? `ZERO_DATA : 
+                                            (buffered_status == 2) ? in_lsb_addr :
+                                                (buffered_status == 1) ? in_fetcher_addr : `ZERO_DATA;
                 end
             endcase
         end else if(rdy == `TRUE && in_rob_misbranch == `TRUE) begin 
@@ -171,7 +177,7 @@ module memCtrl(
             out_data <= `ZERO_DATA;
             status <= 0;
             stages <= 1;
-            out_ram_rw <= 1;
+            out_ram_rw <= 0;
             out_ram_address <= `ZERO_DATA;
         end
     end

@@ -199,6 +199,7 @@ memCtrl memory_unit(
 
 registers regfile_unit(
   .clk(clk_in), .rst(rst_in), .rdy(rdy_in),
+  .in_fetcher_ce(fetcher_out_store_ce),
   .in_decode_reg_tag1(decoder_to_reg_tag1), .out_decode_value1(reg_to_decoder_value1), .out_decode_rob_tag1(reg_to_decoder_robtag1), .out_decode_busy1(reg_to_decoder_busy1),
   .in_decode_reg_tag2(decoder_to_reg_tag2), .out_decode_value2(reg_to_decoder_value2), .out_decode_rob_tag2(reg_to_decoder_robtag2), .out_decode_busy2(reg_to_decoder_busy2),
   .in_decode_destination_reg(decoder_to_reg_destination), .in_decode_destination_rob(decoder_to_reg_robtag),

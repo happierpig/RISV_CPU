@@ -150,6 +150,9 @@ module rob(
                     case(op[nowPtr])
                         `NOP: begin end
                         `JALR: begin 
+                            `ifdef debug
+                                $display($time," [ROB] Misbranch,rob_tag: ",nowPtr," opcode: ",op[nowPtr], " newpc: ",newpc[nowPtr]);
+                            `endif
                             out_reg_index <= destination[nowPtr][`REG_TAG_WIDTH];
                             out_reg_rob_tag <= nowPtr;
                             out_reg_value <= value[nowPtr];
@@ -159,6 +162,9 @@ module rob(
                         `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU: begin 
                             // todo : branch prediction
                             if(value[nowPtr] == `JUMP_ENABLE) begin
+                                `ifdef debug
+                                   $display($time," [ROB] Misbranch,rob_tag: ",nowPtr," opcode: ",op[nowPtr], " newpc: ",newpc[nowPtr]);
+                                `endif
                                 out_misbranch <= `TRUE;
                                 out_newpc <= newpc[nowPtr];
                             end

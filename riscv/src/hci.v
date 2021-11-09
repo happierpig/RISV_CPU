@@ -26,7 +26,11 @@
 ***************************************************************************************************/
 
 // modification allowed for debugging purposes
-
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/common/fifo/fifo.v"
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/common/uart/uart.v"
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/common/uart/uart_tx.v"
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/common/uart/uart_rx.v"
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/common/uart/uart_baud_clk.v"
 module hci
 #(
   parameter SYS_CLK_FREQ = 100000000,
@@ -241,9 +245,9 @@ always @*
     if (parity_err)
       d_err_code[DBG_UART_PARITY_ERR] = 1'b1;
 
-    if (~q_io_en & io_en) begin
-      if (io_wr) begin
-        case (io_sel)
+    if (~q_io_en & io_en) begin //io_en: address[17:16] = 2'b11; q_io_en
+      if (io_wr) begin      // memory write signal
+        case (io_sel)       // io_sel is address[2:0]
           3'h00: begin      // 0x30000 write: output byte
             if (!tx_full && io_din!=8'h00) begin
               d_tx_data = io_din;

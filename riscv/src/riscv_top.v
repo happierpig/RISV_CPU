@@ -1,5 +1,6 @@
 // riscv top module file
 // modification allowed for debugging purposes
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/ram.v"
 `include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/common/block_ram/block_ram.v"
 `include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/cpu.v"
 `include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/hci.v"
@@ -52,7 +53,7 @@ wire        cpumc_wr;
 // RAM: internal ram
 //
 wire 						ram_en;
-wire [RAM_ADDR_WIDTH-1:0]	ram_a;
+wire [RAM_ADDR_WIDTH-1:0]	ram_a;				// 16:0 for 128KB
 wire [ 7:0]					ram_dout;
 
 ram #(.ADDR_WIDTH(RAM_ADDR_WIDTH))ram0(
@@ -64,7 +65,7 @@ ram #(.ADDR_WIDTH(RAM_ADDR_WIDTH))ram0(
 	.d_out(ram_dout)
 );
 
-assign 		ram_en = (cpumc_a[RAM_ADDR_WIDTH:RAM_ADDR_WIDTH-1] == 2'b11) ? 1'b0 : 1'b1;
+assign 		ram_en = (cpumc_a[RAM_ADDR_WIDTH:RAM_ADDR_WIDTH-1] == 2'b11) ? 1'b0 : 1'b1;	//30004 => 16 17 bit 为 1
 assign 		ram_a = cpumc_a[RAM_ADDR_WIDTH-1:0];
 
 //

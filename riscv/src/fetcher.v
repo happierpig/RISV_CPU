@@ -66,7 +66,7 @@ module fetcher (
                             pc <= pc + {{12{in_mem_instr[31]}}, in_mem_instr[19:12], in_mem_instr[20], in_mem_instr[30:25], in_mem_instr[24:21], 1'b0};
                         end else begin pc <= pc + 4; end
                     end
-                end else if(status == WAIT_IDLE) begin 
+                end else if(status == WAIT_IDLE && next_idle == `TRUE) begin 
                     out_store_ce <= `TRUE;
                     status <= IDLE;
                 end

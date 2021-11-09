@@ -1,4 +1,4 @@
-
+// `define debug
 // Data Width
 `define DATA_WIDTH 31:0
 `define ROB_TAG_WIDTH 3:0

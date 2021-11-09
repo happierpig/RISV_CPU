@@ -1,5 +1,4 @@
 `include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/constant.v"
-`define debug
 module registers (
     input clk,input rst,input rdy,
 
@@ -63,18 +62,18 @@ module registers (
                     if(in_rob_commit_reg == k) begin
                         values[k] <= in_rob_commit_value;
                         `ifdef debug
-                            $display($time,"Reg ",k," 's value is set to ",in_rob_commit_value," by ",in_rob_commit_rob);
+                            // $display($time,"Reg ",k," 's value is set to ",in_rob_commit_value," by ",in_rob_commit_rob);
                         `endif
                         if(in_rob_commit_rob == tags[k]) begin
                             `ifdef debug
-                                $display($time,"Reg ",k," 's busy tag is false by ",in_rob_commit_rob);
+                                // $display($time,"Reg ",k," 's busy tag is false by ",in_rob_commit_rob);
                             `endif
                             busy[k] <= `FALSE;
                         end
                     end
                     if(in_fetcher_ce == `TRUE && in_decode_destination_reg == k) begin
                         `ifdef debug
-                            $display($time,"Reg ",k," 's busy tag is true,and destination is ",in_decode_destination_rob);
+                            // $display($time,"Reg ",k," 's busy tag is true,and rob_tag is ",in_decode_destination_rob);
                         `endif
                         busy[k] <= `TRUE;
                         tags[k] <= in_decode_destination_rob;
