@@ -116,7 +116,7 @@ module rob(
             // store entry from decoder
             if(in_fetcher_ce == `TRUE && in_decode_op != `NOP) begin    
                 `ifdef debug
-                    $display($time," [ROB]New entry into rob ,opcode: ",in_decode_op," tag is ",nextPtr );
+                    $display($time," [ROB]New entry into rob ,tag: ",nextPtr," opcode: ",in_decode_op );
                 `endif
                 destination[nextPtr] <= in_decode_destination;
                 op[nextPtr] <= in_decode_op;
@@ -142,10 +142,10 @@ module rob(
                 end
             end
             // try to commit head entry
-            if(ready[nowPtr] == `TRUE) begin
+            if(ready[nowPtr] == `TRUE && head != tail) begin
                 if(status == IDLE) begin 
                     `ifdef debug   
-                        $display($time," [ROB]Start commiting instruction ",nowPtr," opcode: ",op[nowPtr]);
+                        $display($time," [ROB]Start commiting instruction tag: ",nowPtr," opcode: ",op[nowPtr]);
                     `endif
                     case(op[nowPtr])
                         `NOP: begin end
@@ -199,7 +199,7 @@ module rob(
                         end
                     endcase
                 end else if(status == WAIT_MEM) begin 
-                    if(in_mem_ce == `TRUE) begin 
+                    if(in_mem_ce == `TRUE) begin
                         status <= IDLE;
                         isStore[nowPtr] <= `FALSE;
                         head <= nowPtr;
