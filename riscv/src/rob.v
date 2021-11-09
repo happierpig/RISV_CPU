@@ -1,5 +1,4 @@
 `include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/constant.v"
-`define debug
 module rob(
     input clk,input rst,input rdy,
 
@@ -117,7 +116,7 @@ module rob(
             // store entry from decoder
             if(in_fetcher_ce == `TRUE && in_decode_op != `NOP) begin    
                 `ifdef debug
-                    $display($time,"New entry into rob ,opcode: ",in_decode_op," tag is ",nextPtr );
+                    $display($time," [ROB]New entry into rob ,opcode: ",in_decode_op," tag is ",nextPtr );
                 `endif
                 destination[nextPtr] <= in_decode_destination;
                 op[nextPtr] <= in_decode_op;
@@ -146,7 +145,7 @@ module rob(
             if(ready[nowPtr] == `TRUE) begin
                 if(status == IDLE) begin 
                     `ifdef debug   
-                        $display($time,"Start commiting instruction ",nowPtr," opcode: ",op[nowPtr]);
+                        $display($time," [ROB]Start commiting instruction ",nowPtr," opcode: ",op[nowPtr]);
                     `endif
                     case(op[nowPtr])
                         `NOP: begin end
@@ -159,12 +158,15 @@ module rob(
                         end
                         `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU: begin 
                             // todo : branch prediction
-                            if(value[nowPtr] == `JUMP_ENABLE) begin 
+                            if(value[nowPtr] == `JUMP_ENABLE) begin
                                 out_misbranch <= `TRUE;
                                 out_newpc <= newpc[nowPtr];
                             end
+                            status <= IDLE;
+                            isStore[nowPtr] <= `FALSE;
+                            head <= nowPtr;
                         end
-                        `SB: begin 
+                        `SB: begin
                             status <= WAIT_MEM;
                             out_mem_size <= 1;
                             out_mem_address <= destination[nowPtr];
@@ -202,7 +204,7 @@ module rob(
                         isStore[nowPtr] <= `FALSE;
                         head <= nowPtr;
                         `ifdef debug
-                            $display($time," ROB ready finish storing memory, rob tag is ",nowPtr," and the value is ",value[nowPtr]);
+                            $display($time," [ROB] Finish storing memory, rob tag is ",nowPtr," and the value is ",value[nowPtr]);
                         `endif
                     end
                 end
