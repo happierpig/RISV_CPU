@@ -1,5 +1,5 @@
 `include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/constant.v"
-
+`define debug
 module lsb(
     input clk,input rst,input rdy,
 
@@ -60,8 +60,8 @@ module lsb(
     reg [`DATA_WIDTH] imms [(`LSB_SIZE-1):0];
     reg [`DATA_WIDTH] value1 [(`LSB_SIZE-1):0];
     reg [`DATA_WIDTH] value2 [(`LSB_SIZE-1):0];
-    reg [`DATA_WIDTH] value1_tag [(`LSB_SIZE-1):0];
-    reg [`DATA_WIDTH] value2_tag [(`LSB_SIZE-1):0];
+    reg [`ROB_TAG_WIDTH] value1_tag [(`LSB_SIZE-1):0];
+    reg [`ROB_TAG_WIDTH] value2_tag [(`LSB_SIZE-1):0];
     wire ready_to_calculate_addr [(`LSB_SIZE-1):0];
     wire [`LSB_TAG_WIDTH] calculate_tag;
     wire ready_to_issue [(`LSB_SIZE-1):0];
@@ -113,7 +113,7 @@ module lsb(
                 value2_tag[j] <= `ZERO_TAG_ROB;
                 address[j] <= `ZERO_DATA;
             end
-        end else if(rdy == `TRUE && in_rob_misbranch != `FALSE) begin
+        end else if(rdy == `TRUE && in_rob_misbranch == `FALSE) begin
             // Try to issue S/L instruction to ROB:
             out_rob_tag <= `ZERO_TAG_ROB;
             out_mem_ce <= `FALSE;
@@ -189,6 +189,9 @@ module lsb(
             end
             // Store new entry into LSB
             if(in_fetcher_ce == `TRUE && in_decode_rob_tag != `ZERO_TAG_ROB) begin
+                `ifdef debug 
+                    $display($time," [LSB] New Entry ,rob_tag : ",in_decode_rob_tag," opcode: ",in_decode_op);
+                `endif
                 busy[nextPtr] <= `TRUE;
                 tail <= nextPtr;
                 tags[nextPtr] <= in_decode_rob_tag;
