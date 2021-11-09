@@ -1,5 +1,5 @@
 `include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/constant.v"
-
+`define debug
 module rob(
     input clk,input rst,input rdy,
 
@@ -115,7 +115,10 @@ module rob(
             out_reg_index <= `ZERO_TAG_REG;
             out_mem_ce <= `FALSE;
             // store entry from decoder
-            if(in_fetcher_ce == `TRUE) begin    
+            if(in_fetcher_ce == `TRUE && in_decode_op != `NOP) begin    
+                `ifdef debug
+                    $display($time,"New entry into rob ,opcode: ",in_decode_op," tag is ",nextPtr );
+                `endif
                 destination[nextPtr] <= in_decode_destination;
                 op[nextPtr] <= in_decode_op;
                 case(in_decode_op) 
@@ -142,6 +145,9 @@ module rob(
             // try to commit head entry
             if(ready[nowPtr] == `TRUE) begin
                 if(status == IDLE) begin 
+                    `ifdef debug   
+                        $display($time,"Start commiting instruction ",nowPtr," opcode: ",op[nowPtr]);
+                    `endif
                     case(op[nowPtr])
                         `NOP: begin end
                         `JALR: begin 
@@ -163,18 +169,21 @@ module rob(
                             out_mem_size <= 1;
                             out_mem_address <= destination[nowPtr];
                             out_mem_data <= value[nowPtr];
+                            out_mem_ce <= `TRUE;
                         end
                         `SH: begin 
                             status <= WAIT_MEM;
                             out_mem_size <= 2;
                             out_mem_address <= destination[nowPtr];
                             out_mem_data <= value[nowPtr];
+                            out_mem_ce <= `TRUE;
                         end
                         `SW: begin 
                             status <= WAIT_MEM;
                             out_mem_size <= 4;
                             out_mem_address <= destination[nowPtr];
                             out_mem_data <= value[nowPtr];
+                            out_mem_ce <= `TRUE;
                         end
 
                         //registers operation | load | JAL
@@ -192,6 +201,9 @@ module rob(
                         status <= IDLE;
                         isStore[nowPtr] <= `FALSE;
                         head <= nowPtr;
+                        `ifdef debug
+                            $display($time," ROB ready finish storing memory, rob tag is ",nowPtr," and the value is ",value[nowPtr]);
+                        `endif
                     end
                 end
             end
