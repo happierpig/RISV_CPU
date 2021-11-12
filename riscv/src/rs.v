@@ -149,7 +149,7 @@ module rs (
                         end
                         if(in_lsb_cdb_tag != `ZERO_TAG_ROB) begin 
                             if(value1_tag[i] == in_lsb_cdb_tag) begin 
-                                value1[i] <= in_lsb_cdb_tag;
+                                value1[i] <= in_lsb_cdb_value;
                                 value1_tag[i] <= `ZERO_TAG_ROB;
                             end
                             if(value2_tag[i] == in_lsb_cdb_tag) begin 
