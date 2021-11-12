@@ -150,7 +150,7 @@ module decode (
                         3'b001:begin    out_rs_op = `BNE;     out_rob_op = `BNE; end
                         3'b100:begin    out_rs_op = `BLT;     out_rob_op = `BLT; end
                         3'b101:begin    out_rs_op = `BGE;     out_rob_op = `BGE; end
-                        3'b110:begin    out_rs_op = `BLTU;    out_rob_op = `LHU; end
+                        3'b110:begin    out_rs_op = `BLTU;    out_rob_op = `BLTU; end
                         3'b111:begin    out_rs_op = `BGEU;    out_rob_op = `BGEU; end
                     endcase
                 end
