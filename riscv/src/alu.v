@@ -43,7 +43,7 @@ module ALU (
                     out_newpc = in_pc + in_imm;
                 end
                 `BGE: begin 
-                    out_value = ($signed(in_value1) > $signed(in_value2)) ? `JUMP_ENABLE : `JUMP_DISABLE;
+                    out_value = ($signed(in_value1) >= $signed(in_value2)) ? `JUMP_ENABLE : `JUMP_DISABLE;
                     out_newpc = in_pc + in_imm;
                 end
                 `BLTU: begin 
@@ -51,7 +51,7 @@ module ALU (
                     out_newpc = in_pc + in_imm;
                 end
                 `BGEU: begin 
-                    out_value = (in_value1 > in_value2) ? `JUMP_ENABLE : `JUMP_DISABLE;
+                    out_value = (in_value1 >= in_value2) ? `JUMP_ENABLE : `JUMP_DISABLE;
                     out_newpc = in_pc + in_imm;
                 end
 
