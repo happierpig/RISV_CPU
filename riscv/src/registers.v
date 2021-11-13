@@ -41,39 +41,38 @@ module registers (
     assign out_decode_busy2 = busy[in_decode_reg_tag2];
     
     // Temporal logic
-    genvar i;
-    generate
-        for(i=0;i<`REG_SIZE;i=i+1) begin:initReg
-            always @(posedge clk) begin
-                if(rst == `TRUE) begin
-                    values[i] <= `ZERO_DATA;
-                    busy[i] <= `FALSE;
-                    tags[i] <= `ZERO_TAG_ROB;
-                end
-            end
+    always @(posedge clk) begin
+        if(rst == `TRUE) begin
+            values[0] <= `ZERO_DATA;
+            busy[0] <= `FALSE;
+            tags[0] <= `ZERO_TAG_ROB;
         end
-    endgenerate
+    end
 
     genvar k;
     generate
         for(k=1;k<`REG_SIZE;k=k+1) begin:ROBWriteReg // make sure that Reg[0] will not be modified.
             always @(posedge clk) begin
-                if(rst == `FALSE && rdy == `TRUE) begin
+                if(rst == `TRUE) begin
+                    values[k] <= `ZERO_DATA; 
+                    busy[k] <= `FALSE;
+                    tags[k] <= `ZERO_TAG_ROB;
+                end else if(rst == `FALSE && rdy == `TRUE) begin
                     if(in_rob_commit_reg == k) begin
                         values[k] <= in_rob_commit_value;
                         `ifdef debug
-                            // $display($time,"Reg ",k," 's value is set to ",in_rob_commit_value," by ",in_rob_commit_rob);
+                            $display($time,"[Reg Value] (",k," ) 's value is set to ",in_rob_commit_value," by ",in_rob_commit_rob);
                         `endif
                         if(in_rob_commit_rob == tags[k]) begin
                             `ifdef debug
-                                // $display($time,"Reg ",k," 's busy tag is false by ",in_rob_commit_rob);
+                                $display($time,"[Reg Busy] (",k," ) 's busy tag is false by ",in_rob_commit_rob);
                             `endif
                             busy[k] <= `FALSE;
                         end
                     end
                     if(in_fetcher_ce == `TRUE && in_decode_destination_reg == k) begin
                         `ifdef debug
-                            // $display($time,"Reg ",k," 's busy tag is true,and rob_tag is ",in_decode_destination_rob);
+                            $display($time,"[Reg] Dest (",k," ) 's busy tag is true,and rob_tag is ",in_decode_destination_rob);
                         `endif
                         busy[k] <= `TRUE;
                         tags[k] <= in_decode_destination_rob;
