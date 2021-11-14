@@ -160,20 +160,6 @@ module lsb(
                         // CDB to rs/rob
                         out_rob_tag <= tags[nowPtr];
                         out_value <= in_mem_data;
-                        // Broadcast to itself
-                        for(j = 0;j < `LSB_SIZE;j=j+1) begin
-                            if(busy[j] == `TRUE) begin 
-                                if(value1_tag[j] == tags[nowPtr]) begin 
-                                    value1[j] <= in_mem_data;
-                                    value1_tag[j] <= `ZERO_TAG_ROB;
-                                end 
-                                if(value2_tag[j] == tags[nowPtr]) begin 
-                                    value2[j] <= in_mem_data;
-                                    value2_tag[j] <= `ZERO_TAG_ROB;
-                                end
-                            end
-                        end
-                        // cancle it in lsb
                         status <= IDLE;
                         busy[nowPtr] <= `FALSE;
                         address_ready[nowPtr] <= `FALSE;
@@ -189,7 +175,7 @@ module lsb(
             // Store new entry into LSB
             if(in_fetcher_ce == `TRUE && in_decode_rob_tag != `ZERO_TAG_ROB) begin
                 `ifdef debug 
-                    $display($time," [LSB] New Entry ,rob_tag : ",in_decode_rob_tag," opcode: ",in_decode_op);
+                    $display($time," [LSB] New Entry ,rob_tag : ",in_decode_rob_tag," opcode: %b",in_decode_op);
                 `endif
                 busy[nextPtr] <= `TRUE;
                 tail <= nextPtr;
@@ -201,7 +187,28 @@ module lsb(
                 value2[nextPtr] <= in_decode_value2;
                 value1_tag[nextPtr] <= in_decode_tag1;
                 value2_tag[nextPtr] <= in_decode_tag2;
-            end 
+                // Store when CDB Broadcast
+                if(in_alu_cdb_tag != `ZERO_TAG_ROB) begin 
+                    if(in_decode_tag1 == in_alu_cdb_tag) begin 
+                        value1[nextPtr] <= in_alu_cdb_value;
+                        value1_tag[nextPtr] <= `ZERO_TAG_ROB;
+                    end
+                    if(in_decode_tag2 == in_alu_cdb_tag) begin 
+                        value2[nextPtr] <= in_alu_cdb_value;
+                        value2_tag[nextPtr] <= `ZERO_TAG_ROB;
+                    end
+                end
+                if(out_rob_tag != `ZERO_TAG_ROB) begin 
+                    if(in_decode_tag1 == out_rob_tag) begin 
+                        value1[nextPtr] <= out_value;
+                        value1_tag[nextPtr] <= `ZERO_TAG_ROB;
+                    end
+                    if(in_decode_tag2 == out_rob_tag) begin 
+                        value2[nextPtr] <= out_value;
+                        value2_tag[nextPtr] <= `ZERO_TAG_ROB;
+                    end
+                end
+            end
             // Monitor ALU CDB
             if(in_alu_cdb_tag != `ZERO_TAG_ROB) begin 
                 for(j = 1;j < `LSB_SIZE;j=j+1) begin 
@@ -217,6 +224,23 @@ module lsb(
                     end
                 end
             end
+
+            // BroadCast to itself
+            if(out_rob_tag != `ZERO_TAG_ROB) begin 
+                for(j = 1;j < `LSB_SIZE;j=j+1) begin 
+                    if(busy[j]== `TRUE) begin
+                        if(value1_tag[j] == out_rob_tag) begin 
+                            value1[j] <= out_value;
+                            value1_tag[j] <= `ZERO_TAG_ROB;
+                        end 
+                        if(value2_tag[j] == out_rob_tag) begin 
+                            value2[j] <= out_value;
+                            value2_tag[j] <= `ZERO_TAG_ROB;
+                        end
+                    end
+                end
+            end
+
         end else if(rdy == `TRUE && in_rob_misbranch == `TRUE) begin 
             out_rob_tag <= `ZERO_TAG_ROB;
             out_mem_ce <= `FALSE;
