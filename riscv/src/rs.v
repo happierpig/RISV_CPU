@@ -133,6 +133,27 @@ module rs (
                     value1_tag[free_tag] <= in_decode_tag1;
                     value2_tag[free_tag] <= in_decode_tag2;
                     pcs[free_tag] <= in_decode_pc;
+                    // Store when CDB broadcast
+                    if(in_alu_cdb_tag != `ZERO_TAG_ROB) begin 
+                        if(in_decode_tag1 == in_alu_cdb_tag) begin 
+                            value1[free_tag] <= in_alu_cdb_value;
+                            value1_tag[free_tag] <= `ZERO_TAG_ROB;
+                        end
+                        if(in_decode_tag2 == in_alu_cdb_tag) begin 
+                            value2[free_tag] <= in_alu_cdb_value;
+                            value2_tag[free_tag] <= `ZERO_TAG_ROB;
+                        end
+                    end
+                    if(in_lsb_cdb_tag != `ZERO_TAG_ROB) begin 
+                        if(in_decode_tag1 == in_lsb_cdb_tag) begin 
+                            value1[free_tag] <= in_lsb_cdb_value;
+                            value1_tag[free_tag] <= `ZERO_TAG_ROB;
+                        end
+                        if(in_decode_tag1 == in_lsb_cdb_tag) begin 
+                            value2[free_tag] <= in_lsb_cdb_value;
+                            value2_tag[free_tag] <= `ZERO_TAG_ROB;
+                        end
+                    end
                 end
                 // monitor CDB
                 for(i = 1;i < `RS_SIZE;i=i+1) begin 
