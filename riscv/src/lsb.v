@@ -116,6 +116,7 @@ module lsb(
             // Try to issue S/L instruction to ROB:
             out_rob_tag <= `ZERO_TAG_ROB;
             out_mem_ce <= `FALSE;
+            out_destination <= `ZERO_DATA;
             if(ready_to_issue[nowPtr] == `TRUE) begin 
                 if(status == IDLE) begin 
                     case(op[nowPtr])
@@ -129,7 +130,7 @@ module lsb(
                             head <= nowPtr;
                         end
                         `LB,`LBU: begin
-                            if(in_rob_check == `FALSE) begin
+                            if(in_rob_check == `FALSE && address[nowPtr] != out_destination) begin
                                 status <= WAIT_MEM;
                                 out_mem_signed <= (op[nowPtr] == `LB) ? 1 : 0; 
                                 out_mem_ce <= `TRUE;
@@ -138,7 +139,7 @@ module lsb(
                             end
                         end
                         `LH,`LHU: begin 
-                            if(in_rob_check == `FALSE) begin
+                            if(in_rob_check == `FALSE && address[nowPtr] != out_destination) begin
                                 status <= WAIT_MEM;
                                 out_mem_signed <= (op[nowPtr] == `LH) ? 1 : 0;
                                 out_mem_ce <= `TRUE;
@@ -147,7 +148,7 @@ module lsb(
                             end
                         end
                         `LW: begin
-                            if(in_rob_check == `FALSE) begin
+                            if(in_rob_check == `FALSE && address[nowPtr] != out_destination) begin
                                 status <= WAIT_MEM;
                                 out_mem_ce <= `TRUE;
                                 out_mem_size <= 4;

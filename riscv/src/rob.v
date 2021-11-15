@@ -183,7 +183,7 @@ module rob(
                             head <= nowPtr;
                             if(value[nowPtr] == `JUMP_ENABLE && predictions[nowPtr] == `FALSE) begin 
                                 `ifdef debug
-                                   $display($time," [ROB] Misbranch rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",newpc[nowPtr]);
+                                   $display($time," [ROB] Misbranch should Jump,rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",newpc[nowPtr]);
                                 `endif
                                 out_misbranch <= `TRUE;
                                 out_newpc <= newpc[nowPtr];
