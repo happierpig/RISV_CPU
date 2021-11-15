@@ -6,6 +6,7 @@ module decode (
     // From Fetcher
     input [`DATA_WIDTH] in_fetcher_instr,
     input [`DATA_WIDTH] in_fetcher_pc,
+    input in_fetcher_jump_ce,
 
     // ask register for source operand status
     output [`REG_TAG_WIDTH] out_reg_tag1,
@@ -36,6 +37,7 @@ module decode (
     // ask rob to store entry
     output reg [`DATA_WIDTH] out_rob_destination, // need to distinguish register name from memory address
     output reg [`INSIDE_OPCODE_WIDTH] out_rob_op,
+    output out_rob_jump_ce,
 
     // ask rs to store entry
     output reg [`ROB_TAG_WIDTH] out_rs_rob_tag, //use this == zero to check whether it is send to rs
@@ -78,6 +80,7 @@ module decode (
     assign out_rob_fetch_tag2 = in_reg_robtag2;
     assign out_reg_rob_tag = in_rob_freetag;
     assign out_pc = in_fetcher_pc;
+    assign out_rob_jump_ce = in_fetcher_jump_ce;
 
     wire [`DATA_WIDTH] value1; wire [`DATA_WIDTH] value2; wire[`ROB_TAG_WIDTH] tag1;wire [`ROB_TAG_WIDTH] tag2;
     assign value1 = (in_reg_busy1 == `FALSE) ? in_reg_value1 : (in_rob_fetch_ready1 == `TRUE) ? in_rob_fetch_value1 : `ZERO_DATA;

@@ -14,6 +14,7 @@ module fetcher (
     // pass to decoder
     output reg [`DATA_WIDTH] out_instr,
     output reg [`DATA_WIDTH] out_pc,
+    output reg out_jump_ce,
 
     // RS/LSB/ROB's status
     input in_rs_idle,
@@ -25,7 +26,11 @@ module fetcher (
 
     // from rob to denote that misbranch
     input in_rob_misbranch,
-    input [`DATA_WIDTH] in_rob_newpc
+    input [`DATA_WIDTH] in_rob_newpc,
+
+    // to and from BranchPredictor
+    output [`BP_TAG_WIDTH] out_bp_tag,
+    input in_bp_jump_ce
 );
     // Control Units
     localparam IDLE = 2'b0,WAIT_MEM = 2'b01,WAIT_IDLE = 2'b10;
@@ -37,6 +42,9 @@ module fetcher (
     reg [24:0] icache_tag [(`ICACHE_SIZE-1):0];
     reg [`DATA_WIDTH] icache_instr [(`ICACHE_SIZE-1):0];
     reg icache_valid [(`ICACHE_SIZE-1):0];
+
+    // Combinatorial logic for BP
+    assign out_bp_tag = out_pc[`BP_HASH_WIDTH];
 
     integer i;
     always@(posedge clk) begin
@@ -78,13 +86,20 @@ module fetcher (
                         icache_valid[pc[`ICACHE_INDEX_WIDTH]] <= `TRUE;
                         icache_tag[pc[`ICACHE_INDEX_WIDTH]] <= pc[`ICACHE_TAG_WIDTH];
                         icache_instr[pc[`ICACHE_INDEX_WIDTH]] <= in_mem_instr;
-                        // branch instruction
                     end
                 end else if(status == WAIT_IDLE && next_idle == `TRUE) begin 
                     out_store_ce <= `TRUE;
                     status <= IDLE;
                     if(out_instr[`OPCODE_WIDTH] == 7'b1101111) begin
                         pc <= pc + {{12{out_instr[31]}}, out_instr[19:12], out_instr[20], out_instr[30:25], out_instr[24:21], 1'b0};
+                    end else if(out_instr[`OPCODE_WIDTH] == 7'b1100011) begin 
+                        if(in_bp_jump_ce == `TRUE) begin 
+                            out_jump_ce <= `TRUE;
+                            pc <= pc + {{20{out_instr[31]}}, out_instr[7], out_instr[30:25], out_instr[11:8], 1'b0};
+                        end else begin 
+                            out_jump_ce <= `FALSE;
+                            pc <= pc + 4;
+                        end
                     end else begin pc <= pc + 4; end
                     `ifdef debug 
                         $display($time," [Fetcher] Output PC : %h",pc);

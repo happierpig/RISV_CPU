@@ -8,6 +8,8 @@
 `include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/registers.v"
 `include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/rob.v"
 `include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/rs.v"
+`include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/bp.v"
+
 // port modification allowed for debugging purposes
 
 module cpu(
@@ -26,10 +28,14 @@ module cpu(
 );
 
 // implementation goes here
+wire bp_to_fetcher_jump_ce;
+
 wire fetcher_to_mem_ce;
 wire [`DATA_WIDTH] fetcher_to_mem_pc;
 wire [`DATA_WIDTH] fetcher_to_decoder_instr;
 wire [`DATA_WIDTH] fetcher_to_decoder_pc;
+wire fetcher_to_decoder_jump_ce;
+wire [`BP_TAG_WIDTH] fetcher_to_bp_tag;
 wire fetcher_out_store_ce;
 
 wire [`REG_TAG_WIDTH] decoder_to_reg_tag1;
@@ -40,6 +46,7 @@ wire [`ROB_TAG_WIDTH] decoder_to_rob_fetch_tag1;
 wire [`ROB_TAG_WIDTH] decoder_to_rob_fetch_tag2;
 wire [`DATA_WIDTH] decoder_to_rob_store_destination;
 wire [`INSIDE_OPCODE_WIDTH] decoder_to_rob_store_op;
+wire decoder_to_rob_jump_ce;
 wire [`ROB_TAG_WIDTH] decoder_to_rs_rob_tag;
 wire [`INSIDE_OPCODE_WIDTH] decoder_to_rs_op;
 wire [`DATA_WIDTH] decoder_to_rs_value1;
@@ -102,6 +109,9 @@ wire rob_to_mem_ce;
 wire [5:0] rob_to_mem_size;
 wire [`DATA_WIDTH] rob_to_mem_address;
 wire [`DATA_WIDTH] rob_to_mem_data;
+wire rob_to_bp_ce;
+wire [`BP_TAG_WIDTH] rob_to_bp_tag;
+wire rob_to_bp_jump_ce;
 
 wire [`DATA_WIDTH] alu_out_cdb_value;
 wire [`ROB_TAG_WIDTH] alu_out_cdb_tag;
@@ -113,22 +123,23 @@ fetcher fetcher_unit(
   .clk(clk_in), .rst(rst_in), .rdy(rdy_in),
   .out_mem_ce(fetcher_to_mem_ce), .out_mem_pc(fetcher_to_mem_pc),
   .in_mem_ce(mem_to_fetcher_ce), .in_mem_instr(mem_out_data),
-  .out_instr(fetcher_to_decoder_instr), .out_pc(fetcher_to_decoder_pc),
+  .out_instr(fetcher_to_decoder_instr), .out_pc(fetcher_to_decoder_pc), .out_jump_ce(fetcher_to_decoder_jump_ce),
   .in_rs_idle(rs_to_fetcher_idle), .in_lsb_idle(lsb_to_fetcher_idle), .in_rob_idle(rob_to_fetcher_idle),
   .out_store_ce(fetcher_out_store_ce),
-  .in_rob_misbranch(rob_out_misbranch), .in_rob_newpc(rob_to_fetcher_newpc)
+  .in_rob_misbranch(rob_out_misbranch), .in_rob_newpc(rob_to_fetcher_newpc),
+  .out_bp_tag(fetcher_to_bp_tag), .in_bp_jump_ce(bp_to_fetcher_jump_ce)
 );
 
 decode decode_unit(
   .clk(clk_in), .rst(rst_in), .rdy(rdy_in),
-  .in_fetcher_instr(fetcher_to_decoder_instr), .in_fetcher_pc(fetcher_to_decoder_pc),
+  .in_fetcher_instr(fetcher_to_decoder_instr), .in_fetcher_pc(fetcher_to_decoder_pc), .in_fetcher_jump_ce(fetcher_to_decoder_jump_ce),
   .out_reg_tag1(decoder_to_reg_tag1), .in_reg_value1(reg_to_decoder_value1), .in_reg_robtag1(reg_to_decoder_robtag1), .in_reg_busy1(reg_to_decoder_busy1), 
   .out_reg_tag2(decoder_to_reg_tag2), .in_reg_value2(reg_to_decoder_value2), .in_reg_robtag2(reg_to_decoder_robtag2), .in_reg_busy2(reg_to_decoder_busy2),
   .out_reg_destination(decoder_to_reg_destination), .out_reg_rob_tag(decoder_to_reg_robtag),
   .in_rob_freetag(rob_to_decoder_freetag),
   .out_rob_fetch_tag1(decoder_to_rob_fetch_tag1), .in_rob_fetch_value1(rob_to_decoder_fetch_value1), .in_rob_fetch_ready1(rob_to_decoder_fetch_ready1), 
   .out_rob_fetch_tag2(decoder_to_rob_fetch_tag2), .in_rob_fetch_value2(rob_to_decoder_fetch_value2), .in_rob_fetch_ready2(rob_to_decoder_fetch_ready2), 
-  .out_rob_destination(decoder_to_rob_store_destination), .out_rob_op(decoder_to_rob_store_op),
+  .out_rob_destination(decoder_to_rob_store_destination), .out_rob_op(decoder_to_rob_store_op), .out_rob_jump_ce(decoder_to_rob_jump_ce),
   .out_rs_rob_tag(decoder_to_rs_rob_tag), .out_rs_op(decoder_to_rs_op), .out_rs_value1(decoder_to_rs_value1), .out_rs_value2(decoder_to_rs_value2),
   .out_rs_tag1(decoder_to_rs_tag1), .out_rs_tag2(decoder_to_rs_tag2), .out_rs_imm(decoder_to_rs_imm), .out_pc(decoder_to_rs_pc),
   .out_lsb_rob_tag(decoder_to_lsb_rob_tag), .out_lsb_op(decoder_to_lsb_op), .out_lsb_value1(decoder_to_lsb_value1), .out_lsb_value2(decoder_to_lsb_value2), 
@@ -165,7 +176,7 @@ lsb lsb_unit(
 rob rob_unit(
   .clk(clk_in), .rst(rst_in), .rdy(rdy_in),
   .out_decode_idle_tag(rob_to_decoder_freetag),
-  .in_decode_destination(decoder_to_rob_store_destination), .in_decode_op(decoder_to_rob_store_op),
+  .in_decode_destination(decoder_to_rob_store_destination), .in_decode_op(decoder_to_rob_store_op), .in_decode_pc(decoder_to_rs_pc), .in_decode_jump_ce(decoder_to_rob_jump_ce),
   .in_decode_fetch_tag1(decoder_to_rob_fetch_tag1), .out_decode_fetch_value1(rob_to_decoder_fetch_value1), .out_decode_fetch_ready1(rob_to_decoder_fetch_ready1),
   .in_decode_fetch_tag2(decoder_to_rob_fetch_tag2), .out_decode_fetch_value2(rob_to_decoder_fetch_value2), .out_decode_fetch_ready2(rob_to_decoder_fetch_ready2),
   .out_fetcher_isidle(rob_to_fetcher_idle),
@@ -176,8 +187,7 @@ rob rob_unit(
   .out_reg_index(rob_to_reg_index), .out_reg_rob_tag(rob_to_reg_rob_tag), .out_reg_value(rob_to_reg_value),
   .out_mem_ce(rob_to_mem_ce), .out_mem_size(rob_to_mem_size), .out_mem_address(rob_to_mem_address), .out_mem_data(rob_to_mem_data), .in_mem_ce(mem_to_rob_ce),
   .out_misbranch(rob_out_misbranch), .out_newpc(rob_to_fetcher_newpc),
-  //debug
-  .in_decode_pc(decoder_to_rs_pc)
+  .out_bp_ce(rob_to_bp_ce), .out_bp_tag(rob_to_bp_tag), .out_bp_jump_ce(rob_to_bp_jump_ce)
 );
 
 ALU alu_unit(
@@ -208,6 +218,16 @@ registers regfile_unit(
   .in_rob_commit_reg(rob_to_reg_index), .in_rob_commit_rob(rob_to_reg_rob_tag), .in_rob_commit_value(rob_to_reg_value),
   .in_rob_misbranch(rob_out_misbranch)
 );
+
+bp branchPredictor_unit(
+  .clk(clk_in), .rst(rst_in), .rdy(rdy_in),
+  .in_fetcher_tag(fetcher_to_bp_tag),
+  .out_fetcher_jump_ce(bp_to_fetcher_jump_ce),
+  .in_rob_bp_ce(rob_to_bp_ce),
+  .in_rob_tag(rob_to_bp_tag),
+  .in_rob_jump_ce(rob_to_bp_jump_ce)
+);
+
 // Specifications:
 // - Pause cpu(freeze pc, registers, etc.) when rdy_in is low
 // - Memory read result will be returned in the next cycle. Write takes 1 cycle(no need to wait)

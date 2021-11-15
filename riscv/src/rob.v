@@ -8,6 +8,8 @@ module rob(
     // asked by decode to store entry
     input [`DATA_WIDTH] in_decode_destination, // distinguish register index with memory address
     input [`INSIDE_OPCODE_WIDTH] in_decode_op,
+    input [`DATA_WIDTH] in_decode_pc,
+    input in_decode_jump_ce,
 
     // asked by decode for register value
     input [`ROB_TAG_WIDTH] in_decode_fetch_tag1,
@@ -53,8 +55,10 @@ module rob(
     output reg out_misbranch,
     output reg [`DATA_WIDTH] out_newpc,
 
-    // debug 
-    input [`DATA_WIDTH] in_decode_pc
+    //output to BP to modify
+    output reg out_bp_ce,
+    output reg [`BP_TAG_WIDTH] out_bp_tag,
+    output reg out_bp_jump_ce
 );
     // information storage
     reg [`DATA_WIDTH] value [(`ROB_SIZE-1):0];
@@ -64,8 +68,9 @@ module rob(
     reg [`DATA_WIDTH] newpc [(`ROB_SIZE-1):0];
     reg isStore[(`ROB_SIZE-1):0]; // When committed,this tag is canceled. 
 
-    // debug 
+    // BP 
     reg [`DATA_WIDTH] pcs [(`ROB_SIZE-1):0];
+    reg predictions [(`ROB_SIZE-1):0];
 
     // Data Structure; 1-15 and 0 is symbol for non
     reg [`ROB_TAG_WIDTH] head;
@@ -110,6 +115,7 @@ module rob(
             status <= IDLE;
             out_misbranch <= `FALSE;
             out_newpc <= `ZERO_DATA;
+            out_bp_ce <= `FALSE;
             for(i = 0;i < `ROB_SIZE;i=i+1) begin 
                 ready[i] <= `FALSE;
                 value[i] <= `ZERO_DATA;
@@ -119,12 +125,14 @@ module rob(
         end else if(rdy == `TRUE && out_misbranch == `FALSE) begin
             out_reg_index <= `ZERO_TAG_REG;
             out_mem_ce <= `FALSE;
+            out_bp_ce <= `FALSE;
             // store entry from decoder
             if(in_fetcher_ce == `TRUE && in_decode_op != `NOP) begin    
                 `ifdef debug
                     // $display($time," [ROB]New entry into rob ,tag: ",nextPtr," opcode: ",in_decode_op );
-                    pcs[nextPtr] = in_decode_pc;
                 `endif
+                pcs[nextPtr] <= in_decode_pc;
+                predictions[nextPtr] <= in_decode_jump_ce;
                 destination[nextPtr] <= in_decode_destination;
                 op[nextPtr] <= in_decode_op;
                 case(in_decode_op) 
@@ -167,17 +175,26 @@ module rob(
                             out_newpc <= newpc[nowPtr];
                         end
                         `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU: begin 
-                            // todo : branch prediction
-                            if(value[nowPtr] == `JUMP_ENABLE) begin
+                            out_bp_ce <= `TRUE; 
+                            out_bp_jump_ce <= (value[nowPtr] == `JUMP_ENABLE) ? `TRUE : `FALSE;
+                            out_bp_tag <= pcs[nowPtr][`BP_HASH_WIDTH];
+                            status <= IDLE;
+                            isStore[nowPtr] <= `FALSE;
+                            head <= nowPtr;
+                            if(value[nowPtr] == `JUMP_ENABLE && predictions[nowPtr] == `FALSE) begin 
                                 `ifdef debug
-                                   $display($time," [ROB] Misbranch,rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",newpc[nowPtr]," oldpc : %h",pcs[nowPtr]);
+                                   $display($time," [ROB] Misbranch rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",newpc[nowPtr]);
                                 `endif
                                 out_misbranch <= `TRUE;
                                 out_newpc <= newpc[nowPtr];
                             end
-                            status <= IDLE;
-                            isStore[nowPtr] <= `FALSE;
-                            head <= nowPtr;
+                            if(value[nowPtr] == `JUMP_DISABLE && predictions[nowPtr] == `TRUE) begin 
+                                `ifdef debug
+                                   $display($time," [ROB] Misbranch rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",newpc[nowPtr]);
+                                `endif
+                                out_misbranch <= `TRUE;
+                                out_newpc <= pcs[nowPtr] + 4;
+                            end
                         end
                         `SB: begin
                             status <= WAIT_MEM;
