@@ -51,7 +51,10 @@ module rob(
 
     // output denote misbranch  
     output reg out_misbranch,
-    output reg [`DATA_WIDTH] out_newpc
+    output reg [`DATA_WIDTH] out_newpc,
+
+    // debug 
+    input [`DATA_WIDTH] in_decode_pc
 );
     // information storage
     reg [`DATA_WIDTH] value [(`ROB_SIZE-1):0];
@@ -60,6 +63,9 @@ module rob(
     reg [`INSIDE_OPCODE_WIDTH] op [(`ROB_SIZE-1):0];
     reg [`DATA_WIDTH] newpc [(`ROB_SIZE-1):0];
     reg isStore[(`ROB_SIZE-1):0]; // When committed,this tag is canceled. 
+
+    // debug 
+    reg [`DATA_WIDTH] pcs [(`ROB_SIZE-1):0];
 
     // Data Structure; 1-15 and 0 is symbol for non
     reg [`ROB_TAG_WIDTH] head;
@@ -116,7 +122,8 @@ module rob(
             // store entry from decoder
             if(in_fetcher_ce == `TRUE && in_decode_op != `NOP) begin    
                 `ifdef debug
-                    $display($time," [ROB]New entry into rob ,tag: ",nextPtr," opcode: ",in_decode_op );
+                    // $display($time," [ROB]New entry into rob ,tag: ",nextPtr," opcode: ",in_decode_op );
+                    pcs[nextPtr] = in_decode_pc;
                 `endif
                 destination[nextPtr] <= in_decode_destination;
                 op[nextPtr] <= in_decode_op;
@@ -145,13 +152,13 @@ module rob(
             if(ready[nowPtr] == `TRUE && head != tail) begin
                 if(status == IDLE) begin 
                     `ifdef debug   
-                        $display($time," [ROB]Start commiting instruction tag: ",nowPtr," opcode: ",op[nowPtr]);
+                        $display($time," [ROB]Start commiting instruction tag: ",nowPtr," opcode: %b",op[nowPtr]," PC : %h",pcs[nowPtr]);
                     `endif
                     case(op[nowPtr])
                         `NOP: begin end
                         `JALR: begin 
                             `ifdef debug
-                                $display($time," [ROB] Misbranch,rob_tag: ",nowPtr," opcode: ",op[nowPtr], " newpc: ",newpc[nowPtr]);
+                                $display($time," [ROB] JALR,rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",newpc[nowPtr]);
                             `endif
                             out_reg_index <= destination[nowPtr][`REG_TAG_WIDTH];
                             out_reg_rob_tag <= nowPtr;
@@ -163,7 +170,7 @@ module rob(
                             // todo : branch prediction
                             if(value[nowPtr] == `JUMP_ENABLE) begin
                                 `ifdef debug
-                                   $display($time," [ROB] Misbranch,rob_tag: ",nowPtr," opcode: ",op[nowPtr], " newpc: ",newpc[nowPtr]);
+                                   $display($time," [ROB] Misbranch,rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",newpc[nowPtr]," oldpc : %h",pcs[nowPtr]);
                                 `endif
                                 out_misbranch <= `TRUE;
                                 out_newpc <= newpc[nowPtr];

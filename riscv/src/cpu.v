@@ -130,7 +130,7 @@ decode decode_unit(
   .out_rob_fetch_tag2(decoder_to_rob_fetch_tag2), .in_rob_fetch_value2(rob_to_decoder_fetch_value2), .in_rob_fetch_ready2(rob_to_decoder_fetch_ready2), 
   .out_rob_destination(decoder_to_rob_store_destination), .out_rob_op(decoder_to_rob_store_op),
   .out_rs_rob_tag(decoder_to_rs_rob_tag), .out_rs_op(decoder_to_rs_op), .out_rs_value1(decoder_to_rs_value1), .out_rs_value2(decoder_to_rs_value2),
-  .out_rs_tag1(decoder_to_rs_tag1), .out_rs_tag2(decoder_to_rs_tag2), .out_rs_imm(decoder_to_rs_imm), .out_rs_pc(decoder_to_rs_pc),
+  .out_rs_tag1(decoder_to_rs_tag1), .out_rs_tag2(decoder_to_rs_tag2), .out_rs_imm(decoder_to_rs_imm), .out_pc(decoder_to_rs_pc),
   .out_lsb_rob_tag(decoder_to_lsb_rob_tag), .out_lsb_op(decoder_to_lsb_op), .out_lsb_value1(decoder_to_lsb_value1), .out_lsb_value2(decoder_to_lsb_value2), 
   .out_lsb_tag1(decoder_to_lsb_tag1), .out_lsb_tag2(decoder_to_lsb_tag2), .out_lsb_imm(decoder_to_lsb_imm)
 );
@@ -175,7 +175,9 @@ rob rob_unit(
   .in_lsb_now_addr(lsb_to_rob_address), .out_lsb_check(rob_to_lsb_check),
   .out_reg_index(rob_to_reg_index), .out_reg_rob_tag(rob_to_reg_rob_tag), .out_reg_value(rob_to_reg_value),
   .out_mem_ce(rob_to_mem_ce), .out_mem_size(rob_to_mem_size), .out_mem_address(rob_to_mem_address), .out_mem_data(rob_to_mem_data), .in_mem_ce(mem_to_rob_ce),
-  .out_misbranch(rob_out_misbranch), .out_newpc(rob_to_fetcher_newpc)
+  .out_misbranch(rob_out_misbranch), .out_newpc(rob_to_fetcher_newpc),
+  //debug
+  .in_decode_pc(decoder_to_rs_pc)
 );
 
 ALU alu_unit(
