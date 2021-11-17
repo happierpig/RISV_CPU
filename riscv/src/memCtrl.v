@@ -5,7 +5,7 @@ module memCtrl(
     
     // check uart is full
     input in_uart_full, // 1 if uart buffer is full
-    
+
     // from fetcher to get instruction
     input in_fetcher_ce,
     input [`DATA_WIDTH] in_fetcher_addr,
@@ -43,19 +43,19 @@ module memCtrl(
     // from rob to denote misbranch 
     input in_rob_misbranch
 );
-
+    localparam IDLE = 0,FETCHER_READ = 1,LSB_READ = 2,ROB_WRITE = 3;
     // Control units 
     reg fetcher_flag;
     reg lsb_flag;
     reg rob_flag;
     reg [5:0] stages;
     reg [1:0] status;
-    wire [1:0] buffered_status; // 0 for idle ; 1 for fetcher; 2 for lsb; 3 for lsb;
+    wire [1:0] buffered_status; // 0 for idle ; 1 for fetcher; 2 for lsb; 3 for rob;
     wire [7:0] buffered_write_data;
     // Combinatorial logic
-    assign buffered_status = (rob_flag == `TRUE) ? 3 : 
-                                (lsb_flag == `TRUE) ? 2 : 
-                                    (fetcher_flag == `TRUE) ? 1 : 0;
+    assign buffered_status = (rob_flag == `TRUE) ? ROB_WRITE : 
+                                (lsb_flag == `TRUE) ? LSB_READ : 
+                                    (fetcher_flag == `TRUE) ? FETCHER_READ : IDLE;
 
     assign buffered_write_data = (stages == 0) ? 0 :
                                     (stages == 1) ? in_rob_data[7:0] :
@@ -71,7 +71,7 @@ module memCtrl(
             rob_flag <= `FALSE;
             out_rob_ce <= `FALSE;
             out_data <= `ZERO_DATA;
-            status <= 0;
+            status <= IDLE;
             stages <= 1;
             out_ram_rw <= 0;
             out_ram_address <= `ZERO_DATA;
@@ -89,7 +89,7 @@ module memCtrl(
             out_ram_address <= out_ram_address + 1;
             stages <= stages + 1;
             case(status)
-                3:begin 
+                ROB_WRITE:begin 
                     out_ram_rw <= 1;
                     if(stages == 1) begin out_ram_address <= in_rob_addr; end
                     out_ram_data <= buffered_write_data;
@@ -97,10 +97,10 @@ module memCtrl(
                         stages <= 1;
                         rob_flag <= `FALSE;
                         out_rob_ce <= `TRUE;
-                        status <= 0;
+                        status <= IDLE;
                     end
                 end
-                2:begin 
+                LSB_READ:begin 
                     case(in_lsb_size)
                         1: begin 
                             case(stages) 
@@ -111,7 +111,7 @@ module memCtrl(
                                     stages <= 1 ;
                                     lsb_flag <= `FALSE;
                                     out_lsb_ce <= `TRUE;
-                                    status <= 0;
+                                    status <= IDLE;
                                 end
                             endcase
                         end
@@ -125,7 +125,7 @@ module memCtrl(
                                     stages <= 1;
                                     lsb_flag <= `FALSE;
                                     out_lsb_ce <= `TRUE;
-                                    status <= 0;
+                                    status <= IDLE;
                                 end
                             endcase
                         end
@@ -140,13 +140,13 @@ module memCtrl(
                                     stages <= 1;
                                     lsb_flag <= `FALSE;
                                     out_lsb_ce <= `TRUE;
-                                    status <= 0;
+                                    status <= IDLE;
                                 end 
                             endcase
                         end
                     endcase
                 end
-                1:begin
+                FETCHER_READ:begin
                     case(stages) 
                         // 1: begin out_ram_address <= in_fetcher_addr; end
                         2: begin out_data[7:0] <= in_ram_data; end
@@ -157,11 +157,11 @@ module memCtrl(
                             stages <= 1;
                             fetcher_flag <= `FALSE;
                             out_fetcher_ce <= `TRUE;
-                            status <= 0;
+                            status <= IDLE;
                         end   
                     endcase
                 end
-                0: begin 
+                IDLE: begin 
                     out_ram_address <= `ZERO_DATA;
                     stages <= 1;
                     status <= buffered_status;
@@ -178,7 +178,7 @@ module memCtrl(
             rob_flag <= `FALSE;
             out_rob_ce <= `FALSE;
             out_data <= `ZERO_DATA;
-            status <= 0;
+            status <= IDLE;
             stages <= 1;
             out_ram_rw <= 0;
             out_ram_address <= `ZERO_DATA;
