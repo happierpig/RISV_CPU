@@ -11,6 +11,7 @@
 `define ICACHE_TAG_WIDTH 31:8
 `define BP_HASH_WIDTH 9:2 // 256 branch-instrs 0/1位一直不变不用hash成为标识符
 `define BP_TAG_WIDTH 7:0
+`define WB_TAG_WIDTH 1:0
 
 // Constant
 `define TRUE    1'b1
@@ -28,6 +29,7 @@
 `define JUMP_DISABLE 32'b0
 `define ICACHE_SIZE 256
 `define BP_TABLE_SIZE 256
+`define WB_SIZE 4
 
 // Instructions
 `define NOP 6'b000000

@@ -52,15 +52,29 @@ module memCtrl(
     reg [1:0] status;
     wire [1:0] buffered_status; // 0 for idle ; 1 for fetcher; 2 for lsb; 3 for rob;
     wire [7:0] buffered_write_data;
+    
+    // Write Buffer Control
+    wire wb_is_empty;
+    wire wb_is_full;
+    reg [`WB_TAG_WIDTH] head;
+    reg [`WB_TAG_WIDTH] tail;
+    reg [`DATA_WIDTH] wb_data [(`WB_SIZE-1):0];
+    reg [`DATA_WIDTH] wb_addr [(`WB_SIZE-1):0];
+    reg [5:0] wb_size [(`WB_SIZE-1):0];
+    wire [`WB_TAG_WIDTH] nextPtr = (tail + 1) % (`WB_SIZE);
+    wire [`WB_TAG_WIDTH] nowPtr = (head + 1) % (`WB_SIZE);
+    assign wb_is_empty = (head == tail) ? `TRUE : `FALSE;
+    assign wb_is_full = (nextPtr == head) ? `TRUE : `FALSE;
+
     // Combinatorial logic
-    assign buffered_status = (rob_flag == `TRUE) ? ROB_WRITE : 
+    assign buffered_status = (wb_is_empty == `FALSE) ? ROB_WRITE : 
                                 (lsb_flag == `TRUE) ? LSB_READ : 
                                     (fetcher_flag == `TRUE) ? FETCHER_READ : IDLE;
 
     assign buffered_write_data = (stages == 0) ? 0 :
-                                    (stages == 1) ? in_rob_data[7:0] :
-                                        (stages == 2) ? in_rob_data[15:8] : 
-                                            (stages == 3) ? in_rob_data[23:16] : in_rob_data[31:24];
+                                    (stages == 1) ? wb_data[nowPtr][7:0] :
+                                        (stages == 2) ? wb_data[nowPtr][15:8] : 
+                                            (stages == 3) ? wb_data[nowPtr][23:16] : wb_data[nowPtr][31:24];
     // Temporal logic
     always @(posedge clk) begin 
         if(rst == `TRUE) begin 
@@ -76,7 +90,9 @@ module memCtrl(
             out_ram_rw <= 0;
             out_ram_address <= `ZERO_DATA;
             out_ram_data <= 0;
-        end else if(rdy == `TRUE && in_rob_misbranch == `FALSE) begin 
+            head <= 0;
+            tail <= 0;
+        end else if(rdy == `TRUE && (in_rob_misbranch == `FALSE || status == ROB_WRITE)) begin 
             // update buffer
             out_ram_rw <= 0; // avoid repeatedly writing
             out_rob_ce <= `FALSE;
@@ -85,19 +101,30 @@ module memCtrl(
             out_ram_data <= 0;
             if(in_fetcher_ce == `TRUE) begin fetcher_flag <= `TRUE;end
             if(in_lsb_ce == `TRUE) begin lsb_flag <= `TRUE; end 
-            if(in_rob_ce == `TRUE) begin rob_flag <= `TRUE; end
+            if(in_rob_ce == `TRUE || rob_flag == `TRUE) begin 
+                if(wb_is_full == `FALSE) begin 
+                    rob_flag <= `FALSE;
+                    out_rob_ce <= `TRUE;
+                    wb_addr[nextPtr] <= in_rob_addr;
+                    wb_data[nextPtr] <= in_rob_data;
+                    wb_size[nextPtr] <= in_rob_size;
+                    tail <= nextPtr;
+                end else begin 
+                    rob_flag <= `TRUE; 
+                end
+            end
             out_ram_address <= out_ram_address + 1;
             stages <= stages + 1;
             case(status)
                 ROB_WRITE:begin 
                     out_ram_rw <= 1;
-                    if(stages == 1) begin out_ram_address <= in_rob_addr; end
+                    if(stages == 1) begin out_ram_address <= wb_addr[nowPtr]; end
                     out_ram_data <= buffered_write_data;
-                    if(stages == in_rob_size) begin 
+                    if(stages == wb_size[nowPtr]) begin
+                        head <= nowPtr;
                         stages <= 1;
-                        rob_flag <= `FALSE;
-                        out_rob_ce <= `TRUE;
-                        status <= IDLE;
+                        if(nowPtr == tail) begin status <= IDLE; end
+                        else begin status <= ROB_WRITE; end
                     end
                 end
                 LSB_READ:begin 
@@ -111,7 +138,13 @@ module memCtrl(
                                     stages <= 1 ;
                                     lsb_flag <= `FALSE;
                                     out_lsb_ce <= `TRUE;
-                                    status <= IDLE;
+                                    if(wb_is_empty == `FALSE) begin
+                                        status <= ROB_WRITE; 
+                                        out_ram_address <= `ZERO_DATA;
+                                    end else if(fetcher_flag == `TRUE) begin
+                                        status <= FETCHER_READ;
+                                        out_ram_address <= in_fetcher_addr;
+                                    end else begin status <= IDLE; end
                                 end
                             endcase
                         end
@@ -125,7 +158,13 @@ module memCtrl(
                                     stages <= 1;
                                     lsb_flag <= `FALSE;
                                     out_lsb_ce <= `TRUE;
-                                    status <= IDLE;
+                                    if(wb_is_empty == `FALSE) begin
+                                        status <= ROB_WRITE; 
+                                        out_ram_address <= `ZERO_DATA;
+                                    end else if(fetcher_flag == `TRUE) begin
+                                        status <= FETCHER_READ;
+                                        out_ram_address <= in_fetcher_addr;
+                                    end else begin status <= IDLE; end
                                 end
                             endcase
                         end
@@ -140,7 +179,13 @@ module memCtrl(
                                     stages <= 1;
                                     lsb_flag <= `FALSE;
                                     out_lsb_ce <= `TRUE;
-                                    status <= IDLE;
+                                    if(wb_is_empty == `FALSE) begin
+                                        status <= ROB_WRITE; 
+                                        out_ram_address <= `ZERO_DATA;
+                                    end else if(fetcher_flag == `TRUE) begin
+                                        status <= FETCHER_READ;
+                                        out_ram_address <= in_fetcher_addr;
+                                    end else begin status <= IDLE; end
                                 end 
                             endcase
                         end
@@ -157,7 +202,13 @@ module memCtrl(
                             stages <= 1;
                             fetcher_flag <= `FALSE;
                             out_fetcher_ce <= `TRUE;
-                            status <= IDLE;
+                            if(wb_is_empty == `FALSE) begin 
+                                status <= ROB_WRITE;
+                                out_ram_address <= `ZERO_DATA;
+                            end else if(lsb_flag == `TRUE) begin 
+                                status <= LSB_READ;
+                                out_ram_address <= in_lsb_addr; 
+                            end else begin status <= IDLE; end
                         end   
                     endcase
                 end
@@ -165,9 +216,9 @@ module memCtrl(
                     out_ram_address <= `ZERO_DATA;
                     stages <= 1;
                     status <= buffered_status;
-                    out_ram_address <= (buffered_status == 3) ? `ZERO_DATA : 
-                                            (buffered_status == 2) ? in_lsb_addr :
-                                                (buffered_status == 1) ? in_fetcher_addr : `ZERO_DATA;
+                    out_ram_address <= (buffered_status == ROB_WRITE) ? `ZERO_DATA : 
+                                            (buffered_status == LSB_READ) ? in_lsb_addr :
+                                                (buffered_status == FETCHER_READ) ? in_fetcher_addr : `ZERO_DATA;
                 end
             endcase
         end else if(rdy == `TRUE && in_rob_misbranch == `TRUE) begin 
@@ -175,13 +226,13 @@ module memCtrl(
             out_fetcher_ce <= `FALSE;
             lsb_flag <= `FALSE;
             out_lsb_ce <= `FALSE;
-            rob_flag <= `FALSE;
             out_rob_ce <= `FALSE;
             out_data <= `ZERO_DATA;
             status <= IDLE;
             stages <= 1;
             out_ram_rw <= 0;
             out_ram_address <= `ZERO_DATA;
+            if(wb_is_empty == `FALSE) begin status <= ROB_WRITE; end
         end
     end
 
