@@ -129,7 +129,7 @@ module rob(
             // store entry from decoder
             if(in_fetcher_ce == `TRUE && in_decode_op != `NOP) begin    
                 `ifdef debug
-                    // $display($time," [ROB]New entry into rob ,tag: ",nextPtr," opcode: ",in_decode_op );
+                    $display($time," [ROB]New entry into rob ,tag: ",nextPtr," opcode: ",in_decode_op );
                 `endif
                 pcs[nextPtr] <= in_decode_pc;
                 predictions[nextPtr] <= in_decode_jump_ce;

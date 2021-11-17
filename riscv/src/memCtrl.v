@@ -2,7 +2,10 @@
 
 module memCtrl(
     input clk,input rst,input rdy,
-
+    
+    // check uart is full
+    input in_uart_full, // 1 if uart buffer is full
+    
     // from fetcher to get instruction
     input in_fetcher_ce,
     input [`DATA_WIDTH] in_fetcher_addr,

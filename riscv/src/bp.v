@@ -20,7 +20,7 @@ module bp(
     integer i;
     always@(posedge clk) begin 
         if(rst == `TRUE) begin 
-            for(i=0;i<`BP_TABLE_SIZE;i=i+1) begin predictor_table[i] = 2'b01;end
+            for(i=0;i<`BP_TABLE_SIZE;i=i+1) begin predictor_table[i] <= 2'b01;end
         end else if(rdy == `TRUE) begin 
             if(in_rob_bp_ce == `TRUE) begin 
                 if(in_rob_jump_ce == `TRUE) begin 
