@@ -14,6 +14,18 @@
 
 2021.11.7 Complete memory control unit and Finish all ,start debug
 
+2021.11.8 Connect all
+
+2021.11.9 Hello World
+
+2021.11.12 Debugging
+
+2021.11.13 Debugging and Pass all simulation test
+
+2021.11.14 Add i-cache ,debug and pass all.
+
+2021.11.15 Add Branch Prediction and debug
+
 #### Repo Structure
 
 ```
