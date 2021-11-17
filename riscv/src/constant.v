@@ -7,8 +7,8 @@
 `define RS_TAG_WIDTH 3:0
 `define LSB_TAG_WIDTH 3:0
 `define OPCODE_WIDTH 6:0
-`define ICACHE_INDEX_WIDTH 6:0
-`define ICACHE_TAG_WIDTH 31:7
+`define ICACHE_INDEX_WIDTH 7:0
+`define ICACHE_TAG_WIDTH 31:8
 `define BP_HASH_WIDTH 9:2 // 256 branch-instrs 0/1位一直不变不用hash成为标识符
 `define BP_TAG_WIDTH 7:0
 
@@ -26,7 +26,7 @@
 `define LSB_SIZE 16
 `define JUMP_ENABLE 32'b1
 `define JUMP_DISABLE 32'b0
-`define ICACHE_SIZE 128
+`define ICACHE_SIZE 256
 `define BP_TABLE_SIZE 256
 
 // Instructions
