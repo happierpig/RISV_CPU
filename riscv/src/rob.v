@@ -84,7 +84,8 @@ module rob(
     assign nextPtr = tail % (`ROB_SIZE-1)+1;
     assign nowPtr = head % (`ROB_SIZE-1)+1;
     assign out_decode_idle_tag = (nextPtr == head) ? `ZERO_TAG_ROB : nextPtr;
-    assign out_fetcher_isidle = (nextPtr != head); 
+    assign out_fetcher_isidle = (nextPtr != head) && ((nextPtr % (`ROB_SIZE-1)+1) != head); 
+    // assign out_fetcher_isidle = (nextPtr != head);
     assign out_decode_fetch_value1 = value[in_decode_fetch_tag1];
     assign out_decode_fetch_ready1 = ready[in_decode_fetch_tag1];
     assign out_decode_fetch_value2 = value[in_decode_fetch_tag2];

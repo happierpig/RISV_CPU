@@ -44,7 +44,7 @@ module fetcher (
     reg icache_valid [(`ICACHE_SIZE-1):0];
 
     // Combinatorial logic for BP
-    assign out_bp_tag = out_pc[`BP_HASH_WIDTH];
+    assign out_bp_tag = pc[`BP_HASH_WIDTH];
 
     integer i;
     always@(posedge clk) begin
@@ -71,7 +71,21 @@ module fetcher (
                     if(icache_valid[pc[`ICACHE_INDEX_WIDTH]] == `TRUE && icache_tag[pc[`ICACHE_INDEX_WIDTH]] == pc[`ICACHE_TAG_WIDTH]) begin 
                         out_instr <= icache_instr[pc[`ICACHE_INDEX_WIDTH]];
                         out_pc <= pc;
-                        status <= WAIT_IDLE;
+                        if(next_idle == `TRUE) begin 
+                            out_store_ce <= `TRUE;
+                            status <= IDLE;
+                            if(icache_instr[pc[`ICACHE_INDEX_WIDTH]][`OPCODE_WIDTH] == 7'b1101111) begin //JAL
+                                pc <= pc + {{12{icache_instr[pc[`ICACHE_INDEX_WIDTH]][31]}}, icache_instr[pc[`ICACHE_INDEX_WIDTH]][19:12], icache_instr[pc[`ICACHE_INDEX_WIDTH]][20], icache_instr[pc[`ICACHE_INDEX_WIDTH]][30:25], icache_instr[pc[`ICACHE_INDEX_WIDTH]][24:21], 1'b0};
+                            end else if(icache_instr[pc[`ICACHE_INDEX_WIDTH]][`OPCODE_WIDTH] == 7'b1100011) begin 
+                                if(in_bp_jump_ce == `TRUE) begin 
+                                    out_jump_ce <= `TRUE; 
+                                    pc <= pc + {{20{icache_instr[pc[`ICACHE_INDEX_WIDTH]][31]}}, icache_instr[pc[`ICACHE_INDEX_WIDTH]][7], icache_instr[pc[`ICACHE_INDEX_WIDTH]][30:25], icache_instr[pc[`ICACHE_INDEX_WIDTH]][11:8], 1'b0};
+                                end else begin 
+                                    out_jump_ce <= `FALSE;
+                                    pc <= pc + 4;
+                                end
+                            end else begin pc <= pc + 4; end;
+                        end else begin status <= WAIT_IDLE; end
                     end else begin  // cache miss
                         status <= WAIT_MEM;
                         out_mem_ce <= `TRUE;
@@ -81,11 +95,25 @@ module fetcher (
                     if(in_mem_ce == `TRUE) begin 
                         out_instr <= in_mem_instr;
                         out_pc <= pc;
-                        status <= WAIT_IDLE;
                         // change i-cache entry
                         icache_valid[pc[`ICACHE_INDEX_WIDTH]] <= `TRUE;
                         icache_tag[pc[`ICACHE_INDEX_WIDTH]] <= pc[`ICACHE_TAG_WIDTH];
                         icache_instr[pc[`ICACHE_INDEX_WIDTH]] <= in_mem_instr;
+                        if(next_idle == `TRUE) begin 
+                            out_store_ce <= `TRUE;
+                            status <= IDLE;
+                            if(in_mem_instr[`OPCODE_WIDTH] == 7'b1101111) begin 
+                                pc <= pc + {{12{in_mem_instr[31]}}, in_mem_instr[19:12], in_mem_instr[20], in_mem_instr[30:25], in_mem_instr[24:21], 1'b0};
+                            end else if(in_mem_instr[`OPCODE_WIDTH] == 7'b1100011) begin 
+                                if(in_bp_jump_ce == `TRUE) begin 
+                                    out_jump_ce <= `TRUE;
+                                    pc <= pc + {{20{in_mem_instr[31]}}, in_mem_instr[7], in_mem_instr[30:25], in_mem_instr[11:8], 1'b0};
+                                end else begin 
+                                    out_jump_ce <= `FALSE;
+                                    pc <= pc + 4;
+                                end
+                            end else begin pc <= pc + 4; end
+                        end else begin status <= WAIT_IDLE; end
                     end
                 end else if(status == WAIT_IDLE && next_idle == `TRUE) begin 
                     out_store_ce <= `TRUE;
