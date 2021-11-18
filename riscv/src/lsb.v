@@ -174,10 +174,7 @@ module lsb(
                 address_ready[calculate_tag] <= `TRUE;
             end
             // Store new entry into LSB
-            if(in_fetcher_ce == `TRUE && in_decode_rob_tag != `ZERO_TAG_ROB) begin
-                `ifdef debug 
-                    $display($time," [LSB] New Entry ,rob_tag : ",in_decode_rob_tag," opcode: %b",in_decode_op);
-                `endif
+            if(in_fetcher_ce == `TRUE && in_decode_rob_tag != `ZERO_TAG_ROB && in_decode_op != `NOP) begin
                 busy[nextPtr] <= `TRUE;
                 tail <= nextPtr;
                 tags[nextPtr] <= in_decode_rob_tag;

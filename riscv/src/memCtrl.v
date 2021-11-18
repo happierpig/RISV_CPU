@@ -93,6 +93,14 @@ module memCtrl(
             head <= 0;
             tail <= 0;
         end else if(rdy == `TRUE && (in_rob_misbranch == `FALSE || status == ROB_WRITE)) begin 
+            if(in_rob_misbranch == `TRUE) begin 
+                fetcher_flag <= `FALSE;
+                out_fetcher_ce <= `FALSE;
+                lsb_flag <= `FALSE;
+                out_lsb_ce <= `FALSE;
+                out_rob_ce <= `FALSE;
+                out_data <= `ZERO_DATA;
+            end
             // update buffer
             out_ram_rw <= 0; // avoid repeatedly writing
             out_rob_ce <= `FALSE;

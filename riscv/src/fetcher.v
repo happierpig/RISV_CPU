@@ -129,9 +129,6 @@ module fetcher (
                             pc <= pc + 4;
                         end
                     end else begin pc <= pc + 4; end
-                    `ifdef debug 
-                        $display($time," [Fetcher] Output PC : %h",pc);
-                    `endif
                 end
             end
         end

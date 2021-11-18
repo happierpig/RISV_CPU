@@ -130,7 +130,7 @@ module rob(
             // store entry from decoder
             if(in_fetcher_ce == `TRUE && in_decode_op != `NOP) begin    
                 `ifdef debug
-                    $display($time," [ROB]New entry into rob ,tag: ",nextPtr," opcode: ",in_decode_op );
+                    $display($time," [ROB]New entry tag : ",nextPtr," opcode: %b",in_decode_op,"; PC : %h",in_decode_pc );
                 `endif
                 pcs[nextPtr] <= in_decode_pc;
                 predictions[nextPtr] <= in_decode_jump_ce;
@@ -160,8 +160,8 @@ module rob(
             // try to commit head entry
             if(ready[nowPtr] == `TRUE && head != tail) begin
                 if(status == IDLE) begin 
-                    `ifdef debug   
-                        $display($time," [ROB]Start commiting instruction tag: ",nowPtr," opcode: %b",op[nowPtr]," PC : %h",pcs[nowPtr]);
+                    `ifdef debug
+                       $display($time," [ROB] Start Committing : ",nowPtr," opcode: %b",op[nowPtr], " pc: %h",pcs[nowPtr]);
                     `endif
                     case(op[nowPtr])
                         `NOP: begin end
@@ -191,7 +191,7 @@ module rob(
                             end
                             if(value[nowPtr] == `JUMP_DISABLE && predictions[nowPtr] == `TRUE) begin 
                                 `ifdef debug
-                                   $display($time," [ROB] Misbranch rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",newpc[nowPtr]);
+                                   $display($time," [ROB] Misbranch rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",pcs[nowPtr] + 4);
                                 `endif
                                 out_misbranch <= `TRUE;
                                 out_newpc <= pcs[nowPtr] + 4;
@@ -235,7 +235,7 @@ module rob(
                         isStore[nowPtr] <= `FALSE;
                         head <= nowPtr;
                         `ifdef debug
-                            $display($time," [ROB] Finish storing memory, rob tag is ",nowPtr," and the value is ",value[nowPtr]);
+                            $display($time," [ROB] Finish storing memory, rob tag : ",nowPtr," ;PC : %h ",pcs[nowPtr]," ;value :%o",value[nowPtr]," ;Address : %h",destination[nowPtr]);
                         `endif
                     end
                 end
