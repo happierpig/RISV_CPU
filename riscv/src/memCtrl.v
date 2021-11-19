@@ -52,7 +52,9 @@ module memCtrl(
     reg [1:0] status;
     wire [1:0] buffered_status; // 0 for idle ; 1 for fetcher; 2 for lsb; 3 for rob;
     wire [7:0] buffered_write_data;
-    
+    wire disable_to_write;
+    reg [1:0] wait_uart; // wait 2 cycle for uart_full signal
+
     // Write Buffer Control
     wire wb_is_empty;
     wire wb_is_full;
@@ -65,6 +67,7 @@ module memCtrl(
     wire [`WB_TAG_WIDTH] nowPtr = (head + 1) % (`WB_SIZE);
     assign wb_is_empty = (head == tail) ? `TRUE : `FALSE;
     assign wb_is_full = (nextPtr == head) ? `TRUE : `FALSE;
+    assign disable_to_write = (in_uart_full == `TRUE || wait_uart != 0 ) && (wb_addr[nowPtr][17:16] == 2'b11);
 
     // Combinatorial logic
     assign buffered_status = (wb_is_empty == `FALSE) ? ROB_WRITE : 
@@ -92,6 +95,7 @@ module memCtrl(
             out_ram_data <= 0;
             head <= 0;
             tail <= 0;
+            wait_uart <= 0;
         end else if(rdy == `TRUE && (in_rob_misbranch == `FALSE || status == ROB_WRITE)) begin 
             if(in_rob_misbranch == `TRUE) begin 
                 fetcher_flag <= `FALSE;
@@ -102,6 +106,7 @@ module memCtrl(
                 out_data <= `ZERO_DATA;
             end
             // update buffer
+            wait_uart <= wait_uart + ((wait_uart == 0) ? 0 : -1);
             out_ram_rw <= 0; // avoid repeatedly writing
             out_rob_ce <= `FALSE;
             out_lsb_ce <= `FALSE;
@@ -125,14 +130,23 @@ module memCtrl(
             stages <= stages + 1;
             case(status)
                 ROB_WRITE:begin 
-                    out_ram_rw <= 1;
-                    if(stages == 1) begin out_ram_address <= wb_addr[nowPtr]; end
-                    out_ram_data <= buffered_write_data;
-                    if(stages == wb_size[nowPtr]) begin
-                        head <= nowPtr;
+                    if(disable_to_write == `TRUE) begin
+                        out_ram_address <= `ZERO_DATA;
+                        out_ram_data <= 1;
                         stages <= 1;
-                        if(nowPtr == tail) begin status <= IDLE; end
-                        else begin status <= ROB_WRITE; end
+                    end else begin 
+                        out_ram_rw <= 1;
+                        if(stages == 1) begin out_ram_address <= wb_addr[nowPtr]; end
+                        out_ram_data <= buffered_write_data;
+                        if(stages == wb_size[nowPtr]) begin
+                            head <= nowPtr;
+                            stages <= 1;
+                            if(nowPtr == tail) begin status <= IDLE; end  
+                            else begin 
+                                status <= ROB_WRITE;
+                                if(wb_addr[nowPtr] == `IO_ADDRESS) wait_uart <= 2;
+                            end
+                        end
                     end
                 end
                 LSB_READ:begin 

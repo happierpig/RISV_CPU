@@ -30,6 +30,7 @@
 `define ICACHE_SIZE 256
 `define BP_TABLE_SIZE 256
 `define WB_SIZE 4
+`define IO_ADDRESS 32'h30000
 
 // Instructions
 `define NOP 6'b000000
