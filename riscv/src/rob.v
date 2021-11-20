@@ -34,6 +34,7 @@ module rob(
     input [`ROB_TAG_WIDTH] in_lsb_cdb_tag,
     input [`DATA_WIDTH] in_lsb_cdb_value,
     input [`DATA_WIDTH] in_lsb_cdb_destination,
+    input in_lsb_ioin, // true for io read,false for normal load operation
 
     // asked by lsb whether exists address collision
     input [`DATA_WIDTH] in_lsb_now_addr,
@@ -49,7 +50,9 @@ module rob(
     output reg [5:0] out_mem_size,
     output reg [`DATA_WIDTH] out_mem_address,
     output reg [`DATA_WIDTH] out_mem_data,
+    output reg out_mem_load_ce, // for io read
     input in_mem_ce,
+    input [`DATA_WIDTH] in_mem_data,
 
     // output denote misbranch  
     output reg out_misbranch,
@@ -58,7 +61,11 @@ module rob(
     //output to BP to modify
     output reg out_bp_ce,
     output reg [`BP_TAG_WIDTH] out_bp_tag,
-    output reg out_bp_jump_ce
+    output reg out_bp_jump_ce,
+
+    //output to CDB 
+    output reg [`ROB_TAG_WIDTH] out_rob_tag, // zero means not to do anything
+    output reg [`DATA_WIDTH] out_value
 );
     // information storage
     reg [`DATA_WIDTH] value [(`ROB_SIZE-1):0];
@@ -67,6 +74,7 @@ module rob(
     reg [`INSIDE_OPCODE_WIDTH] op [(`ROB_SIZE-1):0];
     reg [`DATA_WIDTH] newpc [(`ROB_SIZE-1):0];
     reg isStore[(`ROB_SIZE-1):0]; // When committed,this tag is canceled. 
+    reg isIOread[(`ROB_SIZE-1):0]; // record io load; lbu
 
     // BP 
     reg [`DATA_WIDTH] pcs [(`ROB_SIZE-1):0];
@@ -113,19 +121,24 @@ module rob(
             head <= 1; tail <= 1;
             out_reg_index <= `ZERO_TAG_REG;
             out_mem_ce <= `FALSE;
+            out_mem_load_ce <= `FALSE;
             status <= IDLE;
             out_misbranch <= `FALSE;
             out_newpc <= `ZERO_DATA;
             out_bp_ce <= `FALSE;
+            out_rob_tag <= `ZERO_TAG_ROB;
             for(i = 0;i < `ROB_SIZE;i=i+1) begin 
                 ready[i] <= `FALSE;
                 value[i] <= `ZERO_DATA;
                 op[i] <= `NOP;
                 isStore[i] <= `FALSE;
+                isIOread[i] <= `FALSE;
             end
         end else if(rdy == `TRUE && out_misbranch == `FALSE) begin
+            out_rob_tag <= `ZERO_TAG_ROB;
             out_reg_index <= `ZERO_TAG_REG;
             out_mem_ce <= `FALSE;
+            out_mem_load_ce <= `FALSE;
             out_bp_ce <= `FALSE;
             // store entry from decoder
             if(in_fetcher_ce == `TRUE && in_decode_op != `NOP) begin    
@@ -153,9 +166,11 @@ module rob(
             if(in_lsb_cdb_tag != `ZERO_TAG_ROB) begin
                 ready[in_lsb_cdb_tag] <= `TRUE;
                 value[in_lsb_cdb_tag] <= in_lsb_cdb_value;
+                isIOread[in_lsb_cdb_tag] <= in_lsb_ioin;
                 if(isStore[in_lsb_cdb_tag]) begin 
                     destination[in_lsb_cdb_tag] <= in_lsb_cdb_destination;
                 end
+                if(in_lsb_ioin == `TRUE) begin ready[in_lsb_cdb_tag] <= `FALSE; end
             end
             // try to commit head entry
             if(ready[nowPtr] == `TRUE && head != tail) begin
@@ -240,7 +255,38 @@ module rob(
                     end
                 end
             end
-        end else if(rdy == `TRUE && out_misbranch == `TRUE) begin 
+
+            if(isIOread[nowPtr] == `TRUE && head != tail) begin 
+                if(status == IDLE) begin
+                    `ifdef debug
+                       $display($time," [ROB] Start IO_READ : ",nowPtr," opcode: %b",op[nowPtr], " pc: %h",pcs[nowPtr]," ready : ",ready[nowPtr]);
+                    `endif
+                    status <= WAIT_MEM;
+                    out_mem_load_ce <= `TRUE;
+                end else if(status == WAIT_MEM) begin 
+                    if(in_mem_ce == `TRUE) begin 
+                        `ifdef debug
+                           $display($time," [ROB] Finish IO_READ : ",nowPtr, " pc: %h",pcs[nowPtr]," data : %o",in_mem_data);
+                        `endif
+                        status <= IDLE;
+                        out_reg_index <= destination[nowPtr][`REG_TAG_WIDTH];
+                        out_reg_rob_tag <= nowPtr;
+                        out_reg_value <= in_mem_data;
+                        value[nowPtr] <= in_mem_data;
+                        ready[nowPtr] <= `TRUE;
+                        isStore[nowPtr] <= `FALSE;
+                        isIOread[nowPtr] <= `FALSE;
+                        head <= nowPtr;
+                        // broadcast
+                        out_rob_tag <= nowPtr;
+                        out_value <= in_mem_data;
+                    end
+                end
+            end
+        end else if(rdy == `TRUE && out_misbranch == `TRUE) begin
+            out_bp_ce <= `FALSE;
+            out_rob_tag <= `ZERO_TAG_ROB;
+            out_mem_load_ce <= `FALSE;
             out_misbranch <= `FALSE;
             head <= 1;tail <= 1;
             out_reg_index <= `ZERO_TAG_REG;
@@ -250,6 +296,7 @@ module rob(
                 ready[i] <= `FALSE;
                 value[i] <= `ZERO_DATA;
                 isStore[i] <= `FALSE;
+                isIOread[i] <= `FALSE;
             end
         end
     end

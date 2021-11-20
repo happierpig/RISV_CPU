@@ -25,6 +25,11 @@ module rs (
     // from lsb_cdb to update source value 
     input [`ROB_TAG_WIDTH] in_lsb_cdb_tag, // use this == `ZERO_TAG_ROB to check legality
     input [`DATA_WIDTH] in_lsb_cdb_value,
+    input in_lsb_ioin,
+
+    // from rob_cdb to update source value 
+    input [`ROB_TAG_WIDTH] in_rob_cdb_tag,
+    input [`DATA_WIDTH] in_rob_cdb_value,
  
     // for alu to calculate
     output reg [`INSIDE_OPCODE_WIDTH] out_alu_op, // `NOP means no operations
@@ -168,7 +173,17 @@ module rs (
                                 value2_tag[i] <= `ZERO_TAG_ROB;
                             end
                         end
-                        if(in_lsb_cdb_tag != `ZERO_TAG_ROB) begin 
+                        if(in_rob_cdb_tag != `ZERO_TAG_ROB) begin  
+                            if(value1_tag[i] == in_rob_cdb_tag) begin 
+                                value1[i] <= in_rob_cdb_value;
+                                value1_tag[i] <= `ZERO_TAG_ROB;
+                            end
+                            if(value2_tag[i] == in_rob_cdb_tag) begin 
+                                value2[i] <= in_rob_cdb_value;
+                                value2_tag[i] <= `ZERO_TAG_ROB;
+                            end
+                        end
+                        if(in_lsb_cdb_tag != `ZERO_TAG_ROB && in_lsb_ioin == `FALSE) begin 
                             if(value1_tag[i] == in_lsb_cdb_tag) begin 
                                 value1[i] <= in_lsb_cdb_value;
                                 value1_tag[i] <= `ZERO_TAG_ROB;

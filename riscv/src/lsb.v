@@ -25,6 +25,10 @@ module lsb(
     input [`ROB_TAG_WIDTH] in_alu_cdb_tag,
     input [`DATA_WIDTH] in_alu_cdb_value,
 
+    // from rob_cdb to update  
+    input [`ROB_TAG_WIDTH] in_rob_cdb_tag,
+    input [`DATA_WIDTH] in_rob_cdb_value,
+
     // to memory control 
     output reg out_mem_ce,
     output reg [5:0] out_mem_size,
@@ -39,6 +43,7 @@ module lsb(
     output reg [`ROB_TAG_WIDTH] out_rob_tag, // Zero means Not to do anything
     output reg [`DATA_WIDTH] out_destination, // for store 
     output reg [`DATA_WIDTH] out_value,
+    output reg out_ioin,   // true for 0x30000 read,false for normal load operation
 
     // from ROB to denote that misbranch
     input in_rob_misbranch
@@ -105,6 +110,7 @@ module lsb(
             head <= 1; tail <= 1;
             out_rob_tag <= `ZERO_TAG_ROB;
             out_mem_ce <= `FALSE;
+            out_ioin <= `FALSE;
             for(j = 0;j < `LSB_SIZE;j=j+1) begin 
                 busy[j] <= `FALSE;
                 address_ready[j] <= `FALSE;
@@ -117,6 +123,7 @@ module lsb(
             out_rob_tag <= `ZERO_TAG_ROB;
             out_mem_ce <= `FALSE;
             out_destination <= `ZERO_DATA;
+            out_ioin <= `FALSE;
             if(ready_to_issue[nowPtr] == `TRUE) begin 
                 if(status == IDLE) begin 
                     case(op[nowPtr])
@@ -130,7 +137,14 @@ module lsb(
                             head <= nowPtr;
                         end
                         `LB,`LBU: begin
-                            if(in_rob_check == `FALSE && address[nowPtr] != out_destination) begin
+                            if(address[nowPtr] == `IO_ADDRESS) begin 
+                                status <= IDLE;
+                                out_rob_tag <= tags[nowPtr];
+                                busy[nowPtr] <= `FALSE;
+                                address_ready[nowPtr] <= `FALSE;
+                                head <= nowPtr;
+                                out_ioin <= `TRUE;
+                            end else if(in_rob_check == `FALSE && address[nowPtr] != out_destination) begin
                                 status <= WAIT_MEM;
                                 out_mem_signed <= (op[nowPtr] == `LB) ? 1 : 0; 
                                 out_mem_ce <= `TRUE;
@@ -196,7 +210,7 @@ module lsb(
                         value2_tag[nextPtr] <= `ZERO_TAG_ROB;
                     end
                 end
-                if(out_rob_tag != `ZERO_TAG_ROB) begin 
+                if(out_rob_tag != `ZERO_TAG_ROB && out_ioin == `FALSE) begin 
                     if(in_decode_tag1 == out_rob_tag) begin 
                         value1[nextPtr] <= out_value;
                         value1_tag[nextPtr] <= `ZERO_TAG_ROB;
@@ -207,10 +221,11 @@ module lsb(
                     end
                 end
             end
-            // Monitor ALU CDB
-            if(in_alu_cdb_tag != `ZERO_TAG_ROB) begin 
-                for(j = 1;j < `LSB_SIZE;j=j+1) begin 
-                    if(busy[j] == `TRUE) begin 
+            
+            for(j = 1;j < `LSB_SIZE;j=j+1) begin 
+                if(busy[j] == `TRUE) begin 
+                    // Monitor ALU CDB
+                    if(in_alu_cdb_tag != `ZERO_TAG_ROB) begin
                         if(value1_tag[j] == in_alu_cdb_tag) begin 
                             value1[j] <= in_alu_cdb_value;
                             value1_tag[j] <= `ZERO_TAG_ROB;
@@ -220,13 +235,19 @@ module lsb(
                             value2_tag[j] <= `ZERO_TAG_ROB;
                         end
                     end
-                end
-            end
-
-            // BroadCast to itself
-            if(out_rob_tag != `ZERO_TAG_ROB) begin 
-                for(j = 1;j < `LSB_SIZE;j=j+1) begin 
-                    if(busy[j]== `TRUE) begin
+                    // Monitor ROB CDB maybe have bugs
+                    if(in_rob_cdb_tag != `ZERO_TAG_ROB) begin 
+                        if(value1_tag[j] == in_rob_cdb_tag) begin 
+                            value1[j] <= in_rob_cdb_value;
+                            value1_tag[j] <= `ZERO_TAG_ROB;
+                        end 
+                        if(value2_tag[j] == in_rob_cdb_tag) begin 
+                            value2[j] <= in_rob_cdb_value;
+                            value2_tag[j] <= `ZERO_TAG_ROB;
+                        end
+                    end
+                    // Broadcast to itself
+                    if(out_rob_tag != `ZERO_TAG_ROB && out_ioin == `FALSE) begin 
                         if(value1_tag[j] == out_rob_tag) begin 
                             value1[j] <= out_value;
                             value1_tag[j] <= `ZERO_TAG_ROB;
@@ -241,6 +262,7 @@ module lsb(
 
         end else if(rdy == `TRUE && in_rob_misbranch == `TRUE) begin 
             out_rob_tag <= `ZERO_TAG_ROB;
+            out_ioin <= `FALSE;
             out_mem_ce <= `FALSE;
             status <= IDLE;
             head <= 1;tail <=1;

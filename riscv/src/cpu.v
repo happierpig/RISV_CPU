@@ -92,6 +92,7 @@ wire lsb_to_mem_ce;
 wire [5:0] lsb_to_mem_size;
 wire lsb_to_mem_signed;
 wire [`DATA_WIDTH] lsb_to_mem_address;
+wire lsb_out_ioin;
 
 wire rob_to_fetcher_idle;
 wire rob_out_misbranch;
@@ -112,6 +113,9 @@ wire [`DATA_WIDTH] rob_to_mem_data;
 wire rob_to_bp_ce;
 wire [`BP_TAG_WIDTH] rob_to_bp_tag;
 wire rob_to_bp_jump_ce;
+wire rob_to_mem_load_ce;
+wire [`ROB_TAG_WIDTH] rob_out_tag;
+wire [`DATA_WIDTH] rob_out_value;
 
 wire [`DATA_WIDTH] alu_out_cdb_value;
 wire [`ROB_TAG_WIDTH] alu_out_cdb_tag;
@@ -154,6 +158,8 @@ rs rs_unit(
   .in_decode_imm(decoder_to_rs_imm), .in_decode_tag1(decoder_to_rs_tag1), .in_decode_tag2(decoder_to_rs_tag2), .in_decode_pc(decoder_to_rs_pc),
   .in_alu_cdb_value(alu_out_cdb_value), .in_alu_cdb_tag(alu_out_cdb_tag),
   .in_lsb_cdb_value(lsb_out_cdb_value), .in_lsb_cdb_tag(lsb_out_cdb_tag),
+  .in_lsb_ioin(lsb_out_ioin),
+  .in_rob_cdb_tag(rob_out_tag), .in_rob_cdb_value(rob_out_value),
   .out_alu_op(rs_to_alu_op), .out_alu_value1(rs_to_alu_value1), .out_alu_value2(rs_to_alu_value2), 
   .out_alu_imm(rs_to_alu_imm), .out_alu_rob_tag(rs_to_alu_rob_tag), .out_alu_pc(rs_to_alu_pc),
   .in_rob_misbranch(rob_out_misbranch)
@@ -167,9 +173,11 @@ lsb lsb_unit(
   .in_decode_imm(decoder_to_lsb_imm), .in_decode_tag1(decoder_to_lsb_tag1), .in_decode_tag2(decoder_to_lsb_tag2),
   .out_rob_now_addr(lsb_to_rob_address), .in_rob_check(rob_to_lsb_check),
   .in_alu_cdb_tag(alu_out_cdb_tag), .in_alu_cdb_value(alu_out_cdb_value),
+  .in_rob_cdb_tag(rob_out_tag), .in_rob_cdb_value(rob_out_value),
   .out_mem_ce(lsb_to_mem_ce), .out_mem_size(lsb_to_mem_size), .out_mem_signed(lsb_to_mem_signed), .out_mem_address(lsb_to_mem_address),
   .in_mem_ce(mem_to_lsb_ce), .in_mem_data(mem_out_data),
   .out_rob_tag(lsb_out_cdb_tag), .out_destination(lsb_out_cdb_destination), .out_value(lsb_out_cdb_value),
+  .out_ioin(lsb_out_ioin),
   .in_rob_misbranch(rob_out_misbranch)
 );
 
@@ -183,11 +191,14 @@ rob rob_unit(
   .in_fetcher_ce(fetcher_out_store_ce),
   .in_alu_cdb_value(alu_out_cdb_value), .in_alu_cdb_newpc(alu_out_cdb_newpc), .in_alu_cdb_tag(alu_out_cdb_tag),
   .in_lsb_cdb_tag(lsb_out_cdb_tag), .in_lsb_cdb_value(lsb_out_cdb_value), .in_lsb_cdb_destination(lsb_out_cdb_destination),
+  .in_lsb_ioin(lsb_out_ioin),
   .in_lsb_now_addr(lsb_to_rob_address), .out_lsb_check(rob_to_lsb_check),
   .out_reg_index(rob_to_reg_index), .out_reg_rob_tag(rob_to_reg_rob_tag), .out_reg_value(rob_to_reg_value),
   .out_mem_ce(rob_to_mem_ce), .out_mem_size(rob_to_mem_size), .out_mem_address(rob_to_mem_address), .out_mem_data(rob_to_mem_data), .in_mem_ce(mem_to_rob_ce),
+  .out_mem_load_ce(rob_to_mem_load_ce), .in_mem_data(mem_out_data),
   .out_misbranch(rob_out_misbranch), .out_newpc(rob_to_fetcher_newpc),
-  .out_bp_ce(rob_to_bp_ce), .out_bp_tag(rob_to_bp_tag), .out_bp_jump_ce(rob_to_bp_jump_ce)
+  .out_bp_ce(rob_to_bp_ce), .out_bp_tag(rob_to_bp_tag), .out_bp_jump_ce(rob_to_bp_jump_ce),
+  .out_rob_tag(rob_out_tag), .out_value(rob_out_value)
 );
 
 ALU alu_unit(
@@ -203,6 +214,7 @@ memCtrl memory_unit(
   .in_lsb_ce(lsb_to_mem_ce), .in_lsb_addr(lsb_to_mem_address), .in_lsb_size(lsb_to_mem_size), .in_lsb_signed(lsb_to_mem_signed),
   .out_lsb_ce(mem_to_lsb_ce),
   .in_rob_ce(rob_to_mem_ce), .in_rob_addr(rob_to_mem_address), .in_rob_size(rob_to_mem_size), .in_rob_data(rob_to_mem_data),
+  .in_rob_load_ce(rob_to_mem_load_ce),
   .out_rob_ce(mem_to_rob_ce),
   .out_data(mem_out_data),
   .out_ram_rw(mem_wr), .out_ram_address(mem_a), .out_ram_data(mem_dout), .in_ram_data(mem_din),

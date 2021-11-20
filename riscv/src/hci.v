@@ -252,6 +252,8 @@ always @*
             if (!tx_full && io_din!=8'h00) begin
               d_tx_data = io_din;
               d_wr_en   = 1'b1;
+              // $display($time," [HCI] transfer to io, data : %c",io_din," tx_full : ",tx_full);
+            // end else begin $display($time," [HCI] not transfer to io, data : %c",io_din," tx_full : ",tx_full); end
             end
             $write("%c", io_din);
           end
@@ -271,9 +273,10 @@ always @*
         case (io_sel)
           3'h00: begin      // 0x30000 read: read byte from input buffer
             if (!io_in_empty) begin
+              // $display($time, "[HCI] Read io ");
               io_in_rd_en = 1'b1;
             end
-            // $display("IO:in:%c",io_dout);
+            // $display($time, " IO:in:%c",io_dout);
             if (!rx_empty && !io_in_full) begin
               rd_en   = 1'b1;
               d_io_in_wr_data = rd_data;
