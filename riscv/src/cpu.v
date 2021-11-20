@@ -206,7 +206,8 @@ memCtrl memory_unit(
   .out_rob_ce(mem_to_rob_ce),
   .out_data(mem_out_data),
   .out_ram_rw(mem_wr), .out_ram_address(mem_a), .out_ram_data(mem_dout), .in_ram_data(mem_din),
-  .in_rob_misbranch(rob_out_misbranch)
+  .in_rob_misbranch(rob_out_misbranch),
+  .in_uart_full(io_buffer_full)
 );
 
 registers regfile_unit(
