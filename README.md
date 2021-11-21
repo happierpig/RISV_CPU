@@ -26,6 +26,12 @@
 
 2021.11.15 Add Branch Prediction and debug
 
+2021.11.17 Optimization of i-cache(1 instruction per cycle) and add write buffer
+
+2021.11.18 Debug of Misbranch
+
+2021.11.19 Add output(uart_full check) and support input
+
 #### Repo Structure
 
 ```
