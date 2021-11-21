@@ -149,7 +149,7 @@ module rs (
                             value2_tag[free_tag] <= `ZERO_TAG_ROB;
                         end
                     end
-                    if(in_lsb_cdb_tag != `ZERO_TAG_ROB) begin 
+                    if(in_lsb_cdb_tag != `ZERO_TAG_ROB && in_lsb_ioin == `FALSE) begin 
                         if(in_decode_tag1 == in_lsb_cdb_tag) begin 
                             value1[free_tag] <= in_lsb_cdb_value;
                             value1_tag[free_tag] <= `ZERO_TAG_ROB;
