@@ -72,7 +72,7 @@ module memCtrl(
     assign wb_is_empty = (head == tail) ? `TRUE : `FALSE;
     assign wb_is_full = (nextPtr == head) ? `TRUE : `FALSE;
     assign disable_to_write = (in_uart_full == `TRUE || wait_uart != 0 ) && (wb_addr[nowPtr][17:16] == 2'b11);
-    
+
     // Combinatorial logic
     assign buffered_status = (io_flag == `TRUE) ? IO_READ :
                                 (wb_is_empty == `FALSE) ? ROB_WRITE : 
@@ -97,7 +97,6 @@ module memCtrl(
             stages <= 1;
             out_ram_rw <= 0;
             out_ram_address <= `ZERO_DATA;
-            out_ram_data <= 0;
             head <= 0;
             tail <= 0;
             wait_uart <= 0;
@@ -113,7 +112,7 @@ module memCtrl(
                 io_flag <= `FALSE;
             end
             // update buffer
-            wait_uart <= wait_uart + ((wait_uart == 0) ? 0 : -1);
+            wait_uart <= wait_uart - ((wait_uart == 0) ? 0 : 1);
             out_ram_rw <= 0; // avoid repeatedly writing
             out_rob_ce <= `FALSE;
             out_lsb_ce <= `FALSE;
@@ -141,7 +140,7 @@ module memCtrl(
                     case(stages) 
                         1:begin out_ram_address <= `ZERO_DATA; end
                         2:begin
-                            out_data <= {24'b0,in_ram_data};
+                            out_data <= in_ram_data;
                             stages <= 1;
                             io_flag <= `FALSE;
                             out_rob_ce <= `TRUE;

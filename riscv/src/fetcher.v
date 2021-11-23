@@ -52,9 +52,7 @@ module fetcher (
             status <= IDLE;
             pc <= `ZERO_DATA;
             out_mem_ce <= `FALSE;
-            out_mem_pc <= `ZERO_DATA;
             out_instr <= `ZERO_DATA;
-            out_pc <= `ZERO_DATA;
             out_store_ce <= `FALSE;
             for(i=0;i < `ICACHE_SIZE;i=i+1) begin
                 icache_valid[i] <= `FALSE;

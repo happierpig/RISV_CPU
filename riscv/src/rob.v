@@ -1,5 +1,5 @@
 `include "/Users/dreamer/Desktop/Programm/大二 上/计算机系统/CPU/riscv/src/constant.v"
-module rob(
+module rob(
     input clk,input rst,input rdy,
 
     // asked by decode about idle tag
@@ -124,13 +124,10 @@ module rob(
             out_mem_load_ce <= `FALSE;
             status <= IDLE;
             out_misbranch <= `FALSE;
-            out_newpc <= `ZERO_DATA;
             out_bp_ce <= `FALSE;
             out_rob_tag <= `ZERO_TAG_ROB;
             for(i = 0;i < `ROB_SIZE;i=i+1) begin 
                 ready[i] <= `FALSE;
-                value[i] <= `ZERO_DATA;
-                op[i] <= `NOP;
                 isStore[i] <= `FALSE;
                 isIOread[i] <= `FALSE;
             end
@@ -164,25 +161,24 @@ module rob(
             end
             // monitor lsb cdb  
             if(in_lsb_cdb_tag != `ZERO_TAG_ROB) begin
-                ready[in_lsb_cdb_tag] <= `TRUE;
+                ready[in_lsb_cdb_tag] <= (in_lsb_ioin == `TRUE) ? `FALSE : `TRUE;
                 value[in_lsb_cdb_tag] <= in_lsb_cdb_value;
-                isIOread[in_lsb_cdb_tag] <= in_lsb_ioin;
+                isIOread[in_lsb_cdb_tag] <= (in_lsb_ioin == `TRUE) ? `TRUE : `FALSE;;
                 if(isStore[in_lsb_cdb_tag]) begin 
                     destination[in_lsb_cdb_tag] <= in_lsb_cdb_destination;
                 end
-                if(in_lsb_ioin == `TRUE) begin ready[in_lsb_cdb_tag] <= `FALSE; end
             end
             // try to commit head entry
             if(ready[nowPtr] == `TRUE && head != tail) begin
                 if(status == IDLE) begin 
                     `ifdef debug
-                       $display($time," [ROB] Start Committing : ",nowPtr," opcode: %b",op[nowPtr], " pc: %h",pcs[nowPtr]);
+                        $display($time," [ROB] Start Committing : ",nowPtr," opcode: %b",op[nowPtr], " pc: %h",pcs[nowPtr]);
                     `endif
                     case(op[nowPtr])
                         `NOP: begin end
                         `JALR: begin 
                             `ifdef debug
-                                $display($time," [ROB] JALR,rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",newpc[nowPtr]);
+                                $display($time," [ROB] JALR,rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",newpc[nowPtr]);
                             `endif
                             out_reg_index <= destination[nowPtr][`REG_TAG_WIDTH];
                             out_reg_rob_tag <= nowPtr;
@@ -199,14 +195,14 @@ module rob(
                             head <= nowPtr;
                             if(value[nowPtr] == `JUMP_ENABLE && predictions[nowPtr] == `FALSE) begin 
                                 `ifdef debug
-                                   $display($time," [ROB] Misbranch should Jump,rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",newpc[nowPtr]);
+                                    $display($time," [ROB] Misbranch should Jump,rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",newpc[nowPtr]);
                                 `endif
                                 out_misbranch <= `TRUE;
                                 out_newpc <= newpc[nowPtr];
                             end
                             if(value[nowPtr] == `JUMP_DISABLE && predictions[nowPtr] == `TRUE) begin 
                                 `ifdef debug
-                                   $display($time," [ROB] Misbranch rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",pcs[nowPtr] + 4);
+                                    $display($time," [ROB] Misbranch rob_tag: ",nowPtr," opcode: %b",op[nowPtr], " newpc: %h",pcs[nowPtr] + 4);
                                 `endif
                                 out_misbranch <= `TRUE;
                                 out_newpc <= pcs[nowPtr] + 4;
@@ -254,19 +250,17 @@ module rob(
                         `endif
                     end
                 end
-            end
-
-            if(isIOread[nowPtr] == `TRUE && head != tail) begin 
+            end else if(isIOread[nowPtr] == `TRUE && head != tail) begin 
                 if(status == IDLE) begin
                     `ifdef debug
-                       $display($time," [ROB] Start IO_READ : ",nowPtr," opcode: %b",op[nowPtr], " pc: %h",pcs[nowPtr]," ready : ",ready[nowPtr]);
+                        $display($time," [ROB] Start IO_READ : ",nowPtr," opcode: %b",op[nowPtr], " pc: %h",pcs[nowPtr]," ready : ",ready[nowPtr]);
                     `endif
                     status <= WAIT_MEM;
                     out_mem_load_ce <= `TRUE;
                 end else if(status == WAIT_MEM) begin 
                     if(in_mem_ce == `TRUE) begin 
                         `ifdef debug
-                           $display($time," [ROB] Finish IO_READ : ",nowPtr, " pc: %h",pcs[nowPtr]," data : %o",in_mem_data);
+                            $display($time," [ROB] Finish IO_READ : ",nowPtr, " pc: %h",pcs[nowPtr]," data : %o",in_mem_data);
                         `endif
                         status <= IDLE;
                         out_reg_index <= destination[nowPtr][`REG_TAG_WIDTH];

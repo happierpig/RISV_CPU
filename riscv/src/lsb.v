@@ -110,12 +110,11 @@ module lsb(
             head <= 1; tail <= 1;
             out_rob_tag <= `ZERO_TAG_ROB;
             out_mem_ce <= `FALSE;
+            out_mem_address <= `ZERO_DATA;
             out_ioin <= `FALSE;
             for(j = 0;j < `LSB_SIZE;j=j+1) begin 
                 busy[j] <= `FALSE;
                 address_ready[j] <= `FALSE;
-                value1_tag[j] <= `ZERO_TAG_ROB;
-                value2_tag[j] <= `ZERO_TAG_ROB;
                 address[j] <= `ZERO_DATA;
             end
         end else if(rdy == `TRUE && in_rob_misbranch == `FALSE) begin
@@ -268,8 +267,8 @@ module lsb(
             head <= 1;tail <=1;
             for(j = 1;j < `LSB_SIZE;j=j+1) begin 
                 busy[j] <= `FALSE;
-                tags[j] <= `ZERO_TAG_ROB;
                 address_ready[j] <= `FALSE;
+                address[j] <= `ZERO_DATA;
             end
         end
     end

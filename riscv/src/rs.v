@@ -106,7 +106,6 @@ module rs (
             out_alu_op <= `NOP;
             for(i = 0;i < `RS_SIZE;i=i+1) begin 
                 busy[i] <= `FALSE;
-                tags[i] <= `ZERO_TAG_ROB;
                 op[i] <= `NOP;
             end
         end else if(rdy == `TRUE) begin 
@@ -128,7 +127,7 @@ module rs (
                     busy[issue_tag] <= `FALSE;
                 end
                 //try to store new entry into rs
-                if(in_fetcher_ce == `TRUE && in_decode_rob_tag != `ZERO_TAG_ROB) begin 
+                if(in_fetcher_ce == `TRUE && in_decode_rob_tag != `ZERO_TAG_ROB && in_decode_op != `NOP) begin 
                     busy[free_tag] <= `TRUE;
                     tags[free_tag] <= in_decode_rob_tag;
                     op[free_tag] <= in_decode_op;
