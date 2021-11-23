@@ -67,8 +67,6 @@
 
 - ALU/LSB的广播与ROB readyTag的更新是同一个周期执行的，在这之前进入栈中的指令是可以被广播到的，在这之后进入的指令可以从ROB中获取，这一周期进入的指令需要同时监听CDB避免无法获得源寄存器的值。
 
-以及一大堆手误问题....
-
 ### LSB Load RAW问题
 
 - RAW：Load指令前面*相同内存地址*的Store还未写入完毕，Load就去读写了
@@ -85,4 +83,20 @@
   if(in_rob_check == `FALSE && address[nowPtr] != out_destination)
   ```
 
-  
+
+### Misbranch Reflush
+
+- 注意`misbranch`需要冲刷掉的所有信号，避免遗漏。
+- 如：`memctrl`当中的flag信号需要刷掉
+
+### uart_full 时延
+
+- 向uart发出申请写出output，其输入的`io_buffer_full`会有两个周期的时延，所以每次输出后要等待两个周期再尝试下一次输出
+
+
+
+### io_in
+
+- to be solved
+- `statement_test`测试点在增加读入功能后，每次上板后第一次跑`statement_test`以及只跑`statement_test`都可以正确跑出。但如果跑了其他测试点后再跑`statement_test`会得到错误输出。
+- 猜测：reset问题/降频不到位；但并未找到。
