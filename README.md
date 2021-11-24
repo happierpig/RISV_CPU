@@ -1,59 +1,93 @@
-# RISCV-CPU
+# Lightyear
 
-#### Write Log
+![](https://img.shields.io/badge/Simulation-Passed-brightgreen)![](https://img.shields.io/badge/FPGA-Passed-brightgreen)
 
-2021.11.2 Learn Tomasulo and Verilog
+> Run on XC7A35T-ICPG236C FPGA board
 
-2021.11.3 Complete the design drawing and start writing
+A toy CPU supporting part of RV32I Instruction set, implementing dynamic scheduling by tomasulo algorithm, providing speculation and precise exception. MS108 Course Project.
 
-2021.11.4 Finish PC/Fetcher/Register
 
-2021.11.5 Finish Decoder/RS/ROB
 
-2021.11.6 Finish LSB/ALU and modify some unreasonable codes
+#### Feature
 
-2021.11.7 Complete memory control unit and Finish all ,start debug
+- [x] 16 entries RS, 16 entries LSB and 16 entries ROB
+- [x] 255 entries direct mapping i-cache supporting throughput of one instruction per cycle
+- [x] 4 entries write buffer, providing *scary fast* memory performance
+- [x] 255 entries 2-bit saturating counter branch predictor
+- [x] LSB support incomplete order execution by checking RAW
+- [ ] Multiple Issue 
 
-2021.11.8 Connect all
 
-2021.11.9 Hello World
 
-2021.11.12 Debugging
+#### Performance
 
-2021.11.13 Debugging and Pass all simulation test
+|        |  Pi  | Superloop | bulgarian | Basicopt1 | Magic |
+| :----: | :--: | :-------: | :-------: | :-------: | :---: |
+| Cycles |      |           |           |           |       |
+| Time/s |      |           |           |           |       |
 
-2021.11.14 Add i-cache ,debug and pass all.
+> Cycles tested in simulation by adding \$display($time) in hci.v
+>
+> Time tested on 100Mhz FPGA board
 
-2021.11.15 Add Branch Prediction and debug
 
-2021.11.17 Optimization of i-cache(1 instruction per cycle) and add write buffer
 
-2021.11.18 Debug of Misbranch
+#### Design schematic
 
-2021.11.19 Add output(uart_full check) and support input
 
-2021.11.20 Pass FPGA tests
+
+#### Synthesis schematic
+
+
 
 #### Repo Structure
 
 ```
-|--riscv/
-|  |--ctrl/             Interface with FPGA
-|  |--sim/              Testbench, add to Vivado project only in simulation
-|  |--src/              Where your code should be
-|  |  |--common/                Provided UART and RAM
-|  |  |--Basys-3-Master.xdc     constraint file
-|  |  |--cpu.v                  Fill it. 
-|  |  |--hci.v                  A bus between UART/RAM and CPU
-|  |  |--ram.v                  RAM
-|  |  |--riscv_top.v            Top design
-|  |--sys/              Help compile
-|  |--testcase/         Testcases
-|  |--autorun_fpga.sh   Autorun Testcase on FPGA
-|  |--build_test.sh     Run it to build test.data from test.c
-|  |--FPGA_test.py      Test correctness on FPGA
-|  |--pd.tcl            Program device the bitstream onto FPGA
-|  |--run_test.sh       Run test
-|  |--run_test_fpga.sh  Run test on FPGA
-|--serial/              A third-party library for interfacing with FPGA ports
+📦CPU
+ ┣ 📂doc
+ ┃ ┣ 📜ChangeFreq.pdf
+ ┃ ┣ 📜Hello World.png
+ ┃ ┣ 📜Instructions.png
+ ┃ ┣ 📜Project Introduction.pptx
+ ┃ ┣ 📜ProjectLog.md
+ ┃ ┣ 📜Structure.png
+ ┃ ┗ 📜vivadoDemo.pdf
+ ┣ 📂riscv
+ ┃ ┣ 📂ctrl																		Interface with FPGA
+ ┃ ┣ 📂sim																		Testbench, add to Vivado project only in simulation
+ ┃ ┣ 📂src																		My code
+ ┃ ┃ ┣ 📂common																Provided UART and RAM
+ ┃ ┃ ┃ ┣ 📂block_ram													RAM
+ ┃ ┃ ┃ ┣ 📂fifo																FIFO queue for io buffer
+ ┃ ┃ ┃ ┗ 📂uart																Universal Asynchronous Receiver/Transmitter
+ ┃ ┃ ┣ 📜Basys-3-Master.xdc										Constraint file provided for creating project in vivado
+ ┃ ┃ ┣ 📜alu.v																Arithmetic logic unit
+ ┃ ┃ ┣ 📜bp.v																	BTB Branch Prediction
+ ┃ ┃ ┣ 📜constant.v														Defines statement
+ ┃ ┃ ┣ 📜cpu.v																Connect all submodule together
+ ┃ ┃ ┣ 📜decode.v															Combinatorial logic for instruction decode
+ ┃ ┃ ┣ 📜fetcher.v														PC/IF/i-cache
+ ┃ ┃ ┣ 📜hci.v																A data bus between UART/RAM and CPU
+ ┃ ┃ ┣ 📜lsb.v																Load store buffer
+ ┃ ┃ ┣ 📜memCtrl.v														Interface with RAM, deal with structure hazard
+ ┃ ┃ ┣ 📜ram.v																RAM
+ ┃ ┃ ┣ 📜registers.v													Register file
+ ┃ ┃ ┣ 📜riscv_top.v													Top design
+ ┃ ┃ ┣ 📜rob.v																Reorder buffer
+ ┃ ┃ ┗ 📜rs.v																	Reservation station
+ ┃ ┣ 📂sys																		Help compile, includes io.h
+ ┃ ┣ 📂testcase																Testcases from TA
+ ┃ ┣ 📜FPGA_test.py														Test correctness on FPGA
+ ┃ ┣ 📜FPGA_test_without_tool_chain.py				My script using compiled .bin to test
+ ┃ ┣ 📜autorun_fpga.sh												Component of FPGA_test.py
+ ┃ ┣ 📜autorun_fpga_without_tool_chain.sh			Component of FPGA_test_without_tool_chain.py
+ ┃ ┣ 📜build_test.sh													Run it to build test.data and test.bin from test.c
+ ┃ ┣ 📜generate_bin.py												My script used to generate all .bin
+ ┃ ┣ 📜generate_bin_bash.sh										Component of generate_bin.py
+ ┃ ┣ 📜my_check_test.sh												My script runs test and diff output with .ans
+ ┃ ┣ 📜my_run_test.sh													My script used to run simulation test
+ ┃ ┣ 📜run_test.sh														Run test
+ ┃ ┗ 📜run_test_fpga.sh												Run specific test on FPGA
+ ┣ 📜README.md
+ ┗ 📜serial.zip																A third-party library for interfacing with FPGA ports
 ```
