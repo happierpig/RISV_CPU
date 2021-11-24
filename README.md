@@ -21,10 +21,10 @@ A toy CPU supporting part of RV32I Instruction set, implementing dynamic schedul
 
 #### Performance
 
-|        |  Pi  | Superloop | bulgarian | Basicopt1 | Magic |
-| :----: | :--: | :-------: | :-------: | :-------: | :---: |
-| Cycles |      |           |           |           |       |
-| Time/s |      |           |           |           |       |
+|        |    Pi    | Superloop | bulgarian | Basicopt1 |  Magic   |
+| :----: | :------: | :-------: | :-------: | :-------: | :------: |
+| Cycles |          |  1744345  |  6687495  |  2749293  | 5168865  |
+| Time/s | 1.912046 | 0.021458  | 1.745739  | 0.027818  | 0.030861 |
 
 > Cycles tested in simulation by adding \$display($time) in hci.v
 >
