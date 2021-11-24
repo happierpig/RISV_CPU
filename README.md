@@ -1,7 +1,5 @@
 # Lightyear
 
-![](https://img.shields.io/badge/Simulation-Passed-brightgreen)    ![](https://img.shields.io/badge/FPGA-Passed-brightgreen)    
-
 > Run on XC7A35T-ICPG236C FPGA board
 
 A toy CPU supporting part of RV32I Instruction set, implementing dynamic scheduling by tomasulo algorithm, providing speculation and precise exception. MS108 Course Project.
@@ -50,14 +48,7 @@ A toy CPU supporting part of RV32I Instruction set, implementing dynamic schedul
 
 ```
 📦CPU
- ┣ 📂doc
- ┃ ┣ 📜ChangeFreq.pdf
- ┃ ┣ 📜Hello World.png
- ┃ ┣ 📜Instructions.png
- ┃ ┣ 📜Project Introduction.pptx
- ┃ ┣ 📜ProjectLog.md
- ┃ ┣ 📜Structure.png
- ┃ ┗ 📜vivadoDemo.pdf
+ ┣ 📂doc                                      Files maybe help you
  ┣ 📂riscv
  ┃ ┣ 📂ctrl                                   Interface with FPGA
  ┃ ┣ 📂sim                                    Testbench, add to Vivado project only in simulation
