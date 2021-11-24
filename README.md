@@ -6,6 +6,8 @@
 
 A toy CPU supporting part of RV32I Instruction set, implementing dynamic scheduling by tomasulo algorithm, providing speculation and precise exception. MS108 Course Project.
 
+<img src="https://static.wikia.nocookie.net/pokemon/images/0/08/E_025_front.gif/revision/latest?cb=20120626205205" style="zoom:185%;" align='left' />
+
 
 
 #### Feature
