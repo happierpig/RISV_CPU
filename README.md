@@ -32,7 +32,7 @@ A toy CPU supporting part of RV32I Instruction set, implementing dynamic schedul
 
 
 
-![](https://github.com/happierpig/RISV_CPU/blob/master/doc/report.png)
+<img src="doc/report.png" style="zoom:40%;" />
 
 #### Design schematic
 
@@ -40,9 +40,9 @@ A toy CPU supporting part of RV32I Instruction set, implementing dynamic schedul
 
 #### Synthesis schematic
 
-![](https://github.com/happierpig/RISV_CPU/blob/master/doc/Schematic1.png)
+<img src="doc/Schematic1.png" style="zoom:40%;" />
 
-![](https://github.com/happierpig/RISV_CPU/blob/master/doc/Schematic2.png)
+<img src="doc/Schematic2.png" style="zoom:40%;" />
 
 #### Repo Structure
 
