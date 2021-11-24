@@ -30,7 +30,7 @@ A toy CPU supporting part of RV32I Instruction set, implementing dynamic schedul
 >
 > Time tested on 100Mhz FPGA board
 
-
+![](https://github.com/happierpig/RISV_CPU/blob/master/doc/report.png)
 
 #### Design schematic
 
@@ -38,7 +38,9 @@ A toy CPU supporting part of RV32I Instruction set, implementing dynamic schedul
 
 #### Synthesis schematic
 
+![](https://github.com/happierpig/RISV_CPU/blob/master/doc/Schematic1.png)
 
+![](https://github.com/happierpig/RISV_CPU/blob/master/doc/Schematic2.png)
 
 #### Repo Structure
 
@@ -53,11 +55,11 @@ A toy CPU supporting part of RV32I Instruction set, implementing dynamic schedul
  ┃ ┣ 📜Structure.png
  ┃ ┗ 📜vivadoDemo.pdf
  ┣ 📂riscv
- ┃ ┣ 📂ctrl																		Interface with FPGA
- ┃ ┣ 📂sim																		Testbench, add to Vivado project only in simulation
- ┃ ┣ 📂src																		My code
- ┃ ┃ ┣ 📂common																Provided UART and RAM
- ┃ ┃ ┃ ┣ 📂block_ram													RAM
+ ┃ ┣ 📂ctrl                                   Interface with FPGA
+ ┃ ┣ 📂sim                                    Testbench, add to Vivado project only in simulation
+ ┃ ┣ 📂src                                    My code
+ ┃ ┃ ┣ 📂common                               Provided UART and RAM
+ ┃ ┃ ┃ ┣ 📂block_ram                          RAM
  ┃ ┃ ┃ ┣ 📂fifo																FIFO queue for io buffer
  ┃ ┃ ┃ ┗ 📂uart																Universal Asynchronous Receiver/Transmitter
  ┃ ┃ ┣ 📜Basys-3-Master.xdc										Constraint file provided for creating project in vivado
