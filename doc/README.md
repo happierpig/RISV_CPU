@@ -157,11 +157,23 @@ $ sudo ./install_drivers
 
 - 一些我学习过程中阅读过的文章：
 
-  [何时用组合逻辑或时序逻辑](https://www.cnblogs.com/fendoudexiaohai/p/13164368.html)、[阻塞赋值&非阻塞赋值](https://blog.csdn.net/Jackiezhang1993/article/details/84315983)、[为什么用时序电路实现CPU](https://www.cnblogs.com/niuyourou/p/12075634.html)、[阻塞和非阻塞赋值引申出的原则分析](http://aijishu.com/a/1060000000226195)、[组合逻辑和时序逻辑的综合](https://east1203.github.io/2019/05/27/IC/others/%E7%BB%84%E5%90%88%E9%80%BB%E8%BE%91%E5%92%8C%E6%97%B6%E5%BA%8F%E9%80%BB%E8%BE%91%E7%9A%84%E7%BB%BC%E5%90%88/)、[组合逻辑](https://www.cnblogs.com/liushuhe1990/articles/13194051.html)
+  [何时用组合逻辑或时序逻辑](https://www.cnblogs.com/fendoudexiaohai/p/13164368.html)
+
+  [阻塞赋值&非阻塞赋值](https://blog.csdn.net/Jackiezhang1993/article/details/84315983)
+
+  [为什么用时序电路实现CPU](https://www.cnblogs.com/niuyourou/p/12075634.html)
+
+  [阻塞和非阻塞赋值引申出的原则分析](http://aijishu.com/a/1060000000226195)
+
+  [组合逻辑和时序逻辑的综合](https://east1203.github.io/2019/05/27/IC/others/%E7%BB%84%E5%90%88%E9%80%BB%E8%BE%91%E5%92%8C%E6%97%B6%E5%BA%8F%E9%80%BB%E8%BE%91%E7%9A%84%E7%BB%BC%E5%90%88/)
+
+  [组合逻辑](https://www.cnblogs.com/liushuhe1990/articles/13194051.html)
 
 - 学习语法网站：
 
-  [HDLBIT](https://hdlbits.01xz.net/wiki/Step_one)、[菜鸟教程](https://www.runoob.com/w3cnote/verilog-basic-syntax.html)
+  [HDLBIT](https://hdlbits.01xz.net/wiki/Step_one)
+  
+  [菜鸟教程](https://www.runoob.com/w3cnote/verilog-basic-syntax.html)
 
 
 
@@ -181,6 +193,8 @@ $ sudo ./install_drivers
 
     两个信号才能进入if当中，其中一个信号滞后另外一个信号一周期，会导致奇怪问题（不能先传地址；必须有间隔）
 
+  - 读入要避免`Speculation`错误读掉输入导致后面正确的读入读不到数据；输出要避免将`io_buffer`塞爆
+    
   - `io_full`信号的更新滞后申请写0x30000两周期，所以每次写0x30000后要等待两个周期再尝试下一次写
 
 - RAM的实现：无论读写都不是纯组合逻辑
