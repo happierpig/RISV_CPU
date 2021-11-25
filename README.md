@@ -44,12 +44,16 @@ A toy CPU supporting part of RV32I Instruction set, implementing dynamic schedul
 
 <img src="doc/Schematic2.png" style="zoom:40%;" />
 
+
+
 #### Repo Structure
 
 ```
 📦CPU
  ┣ 📂doc                                      Files maybe help you
  ┣ 📂riscv
+ ┃ ┣ 📂bin                                    .bin files compiled from testcases
+ ┃ ┣ 📂bin_without_in                         .bin files compiled from testcases modified without input
  ┃ ┣ 📂ctrl                                   Interface with FPGA
  ┃ ┣ 📂sim                                    Testbench, add to Vivado project only in simulation
  ┃ ┣ 📂src                                    My code

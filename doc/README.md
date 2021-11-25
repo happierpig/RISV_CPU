@@ -180,6 +180,9 @@ $ sudo ./install_drivers
 ## 可能有用？
 
 - [RV32I基础整数指令集](https://www.cnblogs.com/mikewolf2002/p/11196680.html)
+
+- 对于没有安装`riscv-toolchain`的同学，在`riscv/bin 和 riscv/bin_witout_in`下有编译出来的.bin文件可供上板，以及对应修改过的脚本`run_test_fpga.sh 和 FPGA_test_without_tool_chain.py`。
+
 - 程序的终止是通过向0x30004地址写入数据实现
 
 - io的实现通过读/写0x30000地址
