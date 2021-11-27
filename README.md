@@ -11,11 +11,12 @@ A toy CPU supporting part of RV32I Instruction set, implementing dynamic schedul
 #### Feature
 
 - [x] 16 entries RS, 16 entries LSB and 16 entries ROB
-- [x] 255 entries direct mapping i-cache supporting throughput of one instruction per cycle
+- [x] 255 entries direct-mapped i-cache supporting throughput of one instruction per cycle
 - [x] 4 entries write buffer, providing *scary fast* memory performance
 - [x] 255 entries 2-bit saturating counter branch predictor
 - [x] LSB support incomplete order execution by checking RAW
 - [ ] Multiple Issue 
+- [ ] Add instruction queue
 
 
 
@@ -34,7 +35,11 @@ A toy CPU supporting part of RV32I Instruction set, implementing dynamic schedul
 
 <img src="doc/report.png" style="zoom:40%;" />
 
+
+
 #### Design schematic
+
+<img src="doc/design.png" style="zoom:80%;" />
 
 
 
