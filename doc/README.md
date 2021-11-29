@@ -12,6 +12,14 @@
 
 
 
+## Tomasulo
+
+从CAAQA上学习Tomasulo完全足够
+
+一点[笔记](Tomasulo.md)
+
+
+
 ## 环境配置
 
 > 本人采用mac(intel chip) + VMware(Ubuntu)
@@ -183,7 +191,13 @@ $ sudo ./install_drivers
 
 - 对于没有安装`riscv-toolchain`的同学，在`riscv/bin 和 riscv/bin_witout_in`下有编译出来的.bin文件可供上板，以及对应修改过的脚本`run_test_fpga.sh 和 FPGA_test_without_tool_chain.py`。
 
-- 程序的终止是通过向0x30004地址写入数据实现
+- 两个时序逻辑部件之间的“握手”实现比较重要，比如：ROB满了Dispatcher要等待到有空位再Issue
+
+  实现**准确**和低周期**延迟**
+
+- 由于要保持状态，`Register File`等存储元件需要用时序逻辑实现，但**读**可以用组合(连一条线到寄存器输出端)
+
+- 程序的终止是通过向**0x30004**地址写入数据实现
 
 - io的实现通过读/写0x30000地址
 
@@ -202,7 +216,7 @@ $ sudo ./install_drivers
 
 - RAM的实现：无论读写都不是纯组合逻辑
 
-  - 读也要滞后两个周期才会有数据回传(来自于读地址的时序逻辑)
+  - 读也要滞后**两个周期**才会有数据回传(来自于读地址的时序逻辑)
   - 0x30000的store会清空`mem_din`，所以读和写要有间隔(或者特判间隔)。
 
 - 以及 sleep() 和 inl()函数在仿真时不能跑，直接注释掉或者换成输入的值即可。
